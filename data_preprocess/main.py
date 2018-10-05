@@ -11,14 +11,14 @@ def negative_sampling(data):
         ret.append((data[i][0], data[i][1], data[k][1]))
     return ret
 
-def generate_matrices(data, word_sim):
+def generate_matrices(data, word_sim, print_log = True):
     ret = []
     for i in range(len(data)):
         item = data[i]
         positive_matrix = generate_matrix(item[0], item[1], word_sim)
         negative_matrix = generate_matrix(item[0], item[2], word_sim)
         ret.append((positive_matrix, negative_matrix))
-        if i % 100 ==0:
+        if print_log and i % 100 ==0:
             print('', i, '/', len(data))
     return ret
     
@@ -38,12 +38,19 @@ output format:
 '''
 if __name__ == '__main__':
 
-    input_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/train-python.txt'))
+    dataset_dir_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/xia18'))
+    train_code_path = dataset_dir_path + '/train.code'
+    train_nl_path = dataset_dir_path + '/train.nl'
+    valid_code_path = dataset_dir_path + '/valid.code'
+    valid_nl_path = dataset_dir_path + '/valid.nl'
+    test_code_path = dataset_dir_path + '/test.code'
+    test_nl_path = dataset_dir_path + '/test.nl'
+
     fasttext_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/fasttext-corpus.txt'))
     train_output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/train.pkl'))
-    dev_output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/dev.pkl'))
+    dev_output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/train.pkl'))
 
-    train_data, dev_data, test_data = tokenization.parse(input_path)
+    train_data, dev_data, test_data = tokenization.parse(train_nl_path, valid_nl_path, test_nl_path, train_code_path, valid_code_path, test_code_path)
     train_data = negative_sampling(train_data)
     dev_data = negative_sampling(dev_data)
 
