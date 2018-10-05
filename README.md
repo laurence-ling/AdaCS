@@ -1,4 +1,5 @@
 ## Requirements
+
 * [Python](https://www.python.org/) version 3.6+
 * [fastText](https://github.com/facebookresearch/fastText) for learning distributed word representations
 

@@ -41,7 +41,7 @@ if __name__ == '__main__':
     input_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/train-python.txt'))
     fasttext_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/fasttext-corpus.txt'))
     train_output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/train.pkl'))
-    dev_output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/train.pkl'))
+    dev_output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/dev.pkl'))
 
     train_data, dev_data, test_data = tokenization.parse(input_path)
     train_data = negative_sampling(train_data)
