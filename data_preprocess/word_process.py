@@ -4,8 +4,10 @@ from fastText import train_unsupervised
 
 class WordSim:
 
-    def __init__(self):
+    def __init__(self, core_term_path):
         self.word_embeddings = WordEmbeddings()
+        with open(core_term_path, 'r') as f:
+            self.core_terms = set([word for word in f.readlines() if len(word) > 0])
 
     @functools.lru_cache(maxsize= 64 * 1024, typed=False)
     def sim(self, word_1, word_2):
