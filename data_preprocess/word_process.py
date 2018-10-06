@@ -11,6 +11,11 @@ class WordSim:
         self.word_embeddings = WordEmbeddings()
         with open(core_term_path, 'r') as f:
             self.core_terms = set([word for word in f.readlines() if len(word) > 0])
+        self.core_term_dict = {}
+        index = 2
+        for core_term in self.core_terms:
+            self.core_term_dict[core_term] = index
+            index += 1
 
     @functools.lru_cache(maxsize=64 * 1024, typed=False)
     def sim(self, word_1, word_2):

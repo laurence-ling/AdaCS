@@ -3,8 +3,8 @@ import os
 import pickle
 import random
 
-from tokenization import Tokenizer
-from word_process import WordSim
+from data_preprocess.tokenization import Tokenizer
+from data_preprocess.word_process import WordSim
 
 
 def negative_sampling(data):
@@ -41,7 +41,7 @@ def generate_matrix(words_1, words_2, word_sim):
 
 
 def generate_term_list(words, word_sim):
-    return [(word if word in word_sim.core_terms else '<UNK>') for word in words]
+    return [(word_sim.core_term_dict[word] if word in word_sim.core_terms else 1) for word in words]
 
 
 '''
@@ -50,7 +50,7 @@ output format:
         - each item in this list corresponds to a query;
         - positive_matrix: the relevance matching matrix of the query against its ground truth code snippet;
         - negative_matrix: the relevance matching matrix of the query against a randomly sampled negative code snippet;
-        - terms: a list of terms in the code snippet, can be (1) core terms, or (2) <UNK> for unknown.
+        - terms: a list of terms indices in the code snippet.
 '''
 if __name__ == '__main__':
 

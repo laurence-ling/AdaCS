@@ -22,16 +22,19 @@ class HybridModule(nn.Module):
         self.fc_1 = nn.Linear(lstm_hidden_size * 2, fc_hidden_size)
         self.fc_2 = nn.Linear(fc_hidden_size, 1)
 
-    def forward(self, sim_vec, core_term_idx, y):
-        core_term_vec = self.core_term_embedding(
-            torch.zeros(1, self.core_term_size).scatter_(1, core_term_idx, 1).squeeze())
-        x = torch.cat([sim_vec, core_term_vec])
-        r_out, _ = self.rnn(x, None)
-        data = r_out[:, -1, :]
-        data = self.fc_1(data)
-        data = self.fc_activation(data)
-        data = self.fc_2(data)
-        data = self.fc_activation(data)
-        data = F.dropout(data, 0.25, self.training)
-        loss = (1 - y * data).clamp(min=0).mean()
-        return loss
+    def forward(self, items):
+        ret = 0
+        for item in items:
+            sim_vec = item[0]
+            core_term_idx = item[1]
+            core_term_vec = self.core_term_embedding(
+                torch.zeros(1, self.core_term_size).scatter_(1, core_term_idx, 1).squeeze())
+            x = torch.cat([sim_vec, core_term_vec])
+            r_out, _ = self.rnn(x, None)
+            data = r_out[:, -1, :]
+            data = self.fc_1(data)
+            data = self.fc_activation(data)
+            data = self.fc_2(data)
+            data = self.fc_activation(data)
+            ret += F.dropout(data, 0.25, self.training)
+        return ret
