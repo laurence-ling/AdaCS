@@ -6,7 +6,7 @@ class CodeSearchDataset(Dataset):
     def __init__(self, original_data):
         pass
 
-    def __len(self):
+    def __len__(self):
         return len(self.items)
 
     def __getitem__(self, idx):
