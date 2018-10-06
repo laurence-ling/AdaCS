@@ -1,6 +1,11 @@
-import os, random, numpy, pickle
-from word_process import WordSim
+import numpy
+import os
+import pickle
+import random
+
 from tokenization import Tokenizer
+from word_process import WordSim
+
 
 def negative_sampling(data):
     n = len(data)
@@ -8,11 +13,12 @@ def negative_sampling(data):
     for i in range(n):
         k = i
         while k != i:
-            k = random.randint(0, n-1)
+            k = random.randint(0, n - 1)
         ret.append((data[i][0], data[i][1], data[k][1]))
     return ret
 
-def generate_data(data, word_sim, print_log = True):
+
+def generate_data(data, word_sim, print_log=True):
     ret = []
     for i in range(len(data)):
         item = data[i]
@@ -21,10 +27,11 @@ def generate_data(data, word_sim, print_log = True):
         negative_matrix = generate_matrix(item[0], item[2], word_sim)
         negative_terms = generate_term_list(item[2], word_sim)
         ret.append(((positive_matrix, positive_terms), (negative_matrix, negative_terms)))
-        if print_log and i % 100 ==0:
+        if print_log and i % 100 == 0:
             print('', i, '/', len(data))
     return ret
-    
+
+
 def generate_matrix(words_1, words_2, word_sim):
     ret = numpy.zeros([len(words_1), len(words_2)])
     for i in range(len(words_1)):
@@ -32,8 +39,10 @@ def generate_matrix(words_1, words_2, word_sim):
             ret[i][j] = word_sim.sim(words_1[i], words_2[j])
     return ret
 
+
 def generate_term_list(words, word_sim):
-    return [ (word if word in word_sim.core_terms else '<UNK>') for word in words ]
+    return [(word if word in word_sim.core_terms else '<UNK>') for word in words]
+
 
 '''
 output format:
@@ -56,21 +65,22 @@ if __name__ == '__main__':
 
     fasttext_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/fasttext-corpus.txt'))
     train_output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/train.pkl'))
-    dev_output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/train.pkl'))
+    valid_output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/valid.pkl'))
 
-    train_data, dev_data, test_data = Tokenizer().parse(train_nl_path, valid_nl_path, test_nl_path, train_code_path, valid_code_path, test_code_path)
+    train_data, valid_data, test_data = Tokenizer().parse(train_nl_path, valid_nl_path, test_nl_path, train_code_path,
+                                                          valid_code_path, test_code_path)
     train_data = negative_sampling(train_data)
-    dev_data = negative_sampling(dev_data)
+    valid_data = negative_sampling(valid_data)
 
     with open(fasttext_corpus_path, 'w') as f:
         for item in train_data:
             f.write(' '.join(item[0]) + '\n')
             f.write(' '.join(item[1]) + '\n')
-    
+
     word_sim = WordSim(core_term_path)
     matrices = generate_data(train_data, word_sim)
     with open(train_output_path, 'wb') as f:
         pickle.dump(matrices, f)
-    matrices = generate_data(dev_data, word_sim)
-    with open(dev_output_path, 'wb') as f:
+    matrices = generate_data(valid_data, word_sim)
+    with open(valid_output_path, 'wb') as f:
         pickle.dump(matrices, f)

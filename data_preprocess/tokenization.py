@@ -1,9 +1,11 @@
-import re, random
+import re
+
 
 class Tokenizer:
 
-    def parse(self, train_nl_path, valid_nl_path, test_nl_path, train_code_path, valid_code_path, test_code_path, print_log = True):
-        
+    def parse(self, train_nl_path, valid_nl_path, test_nl_path, train_code_path, valid_code_path, test_code_path,
+              print_log=True):
+
         train_data = self.__combine(self.__parse_file(train_nl_path), self.__parse_file(train_code_path))
         valid_data = self.__combine(self.__parse_file(valid_nl_path), self.__parse_file(valid_code_path))
         test_data = self.__combine(self.__parse_file(test_nl_path), self.__parse_file(test_code_path))
@@ -12,8 +14,10 @@ class Tokenizer:
             query_max_len = 0
             code_max_len = 0
             for item in train_data + valid_data + test_data:
-                if len(item[0]) > query_max_len: query_max_len = len(item[0])
-                if len(item[1]) > code_max_len: code_max_len = len(item[1])
+                if len(item[0]) > query_max_len:
+                    query_max_len = len(item[0])
+                if len(item[1]) > code_max_len:
+                    code_max_len = len(item[1])
             print('TrainData size = ', len(train_data))
             print('ValidData size = ', len(valid_data))
             print('TestData size = ', len(test_data))
@@ -22,7 +26,8 @@ class Tokenizer:
 
         return train_data, valid_data, test_data
 
-    def __combine(self, nl_dict, code_dict):
+    @staticmethod
+    def __combine(nl_dict, code_dict):
         ret = []
         for key in nl_dict.keys():
             ret.append((nl_dict[key], code_dict[key]))
@@ -36,17 +41,18 @@ class Tokenizer:
                 if len(line) > 0:
                     p = line.index('\t')
                     idx = line[: p]
-                    tokens = self.__get_tokens(line[p+1:])
+                    tokens = self.__get_tokens(line[p + 1:])
                     ret[idx] = tokens
         return ret
 
-    def __get_tokens(self, str):
-        words = [word for word in re.split('[^A-Za-z]+', str) if len(word) > 0]
+    def __get_tokens(self, content):
+        words = [word for word in re.split('[^A-Za-z]+', content) if len(word) > 0]
         ret = []
         for word in words:
             ret += self.__camel_case_split(word)
         return ret
 
-    def __camel_case_split(self, word):
+    @staticmethod
+    def __camel_case_split(word):
         matches = re.finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', word)
         return [m.group(0).lower() for m in matches]
