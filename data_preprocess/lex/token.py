@@ -3,28 +3,8 @@ import re
 
 class Tokenizer:
 
-    def parse(self, train_nl_path, valid_nl_path, test_nl_path, train_code_path, valid_code_path, test_code_path,
-              print_log=True):
-
-        train_data = self.__combine(self.__parse_file(train_nl_path), self.__parse_file(train_code_path))
-        valid_data = self.__combine(self.__parse_file(valid_nl_path), self.__parse_file(valid_code_path))
-        test_data = self.__combine(self.__parse_file(test_nl_path), self.__parse_file(test_code_path))
-
-        if print_log:
-            query_max_len = 0
-            code_max_len = 0
-            for item in train_data + valid_data + test_data:
-                if len(item[0]) > query_max_len:
-                    query_max_len = len(item[0])
-                if len(item[1]) > code_max_len:
-                    code_max_len = len(item[1])
-            print('TrainData size = ', len(train_data))
-            print('ValidData size = ', len(valid_data))
-            print('TestData size = ', len(test_data))
-            print('Max query length = ', query_max_len)
-            print('Max code length = ', code_max_len)
-
-        return train_data, valid_data, test_data
+    def parse(self, nl_path, code_path):
+        return self.__combine(self.__parse_file(nl_path), self.__parse_file(code_path))
 
     @staticmethod
     def __combine(nl_dict, code_dict):

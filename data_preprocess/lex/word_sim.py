@@ -7,8 +7,8 @@ from scipy import spatial
 
 class WordSim:
 
-    def __init__(self, core_term_path):
-        self.word_embeddings = WordEmbeddings()
+    def __init__(self, core_term_path, fasttext_corpus_path):
+        self.word_embeddings = WordEmbeddings(fasttext_corpus_path)
         with open(core_term_path, 'r') as f:
             self.core_terms = set([word for word in f.readlines() if len(word) > 0])
         self.core_term_dict = {}
@@ -26,9 +26,8 @@ class WordSim:
 
 class WordEmbeddings:
 
-    def __init__(self):
-        data_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/fasttext-corpus.txt'))
-        self.model = train_unsupervised(input=data_path, model='skipgram')
+    def __init__(self, fasttext_corpus_path):
+        self.model = train_unsupervised(input=fasttext_corpus_path, model='skipgram')
 
     @functools.lru_cache(maxsize=None, typed=False)
     def __getitem__(self, word):
