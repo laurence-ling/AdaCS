@@ -4,7 +4,7 @@ import pickle
 import random
 
 from data_preprocess.tokenization import Tokenizer
-from data_preprocess.word_process import WordSim
+from data_preprocess.lexical_analysis import WordSim
 
 
 def negative_sampling(data):
@@ -29,14 +29,6 @@ def generate_data(data, word_sim, print_log=True):
         ret.append(((positive_matrix, positive_terms), (negative_matrix, negative_terms)))
         if print_log and i % 100 == 0:
             print('', i, '/', len(data))
-    return ret
-
-
-def generate_matrix(words_1, words_2, word_sim):
-    ret = numpy.zeros([len(words_1), len(words_2)])
-    for i in range(len(words_1)):
-        for j in range(len(words_2)):
-            ret[i][j] = word_sim.sim(words_1[i], words_2[j])
     return ret
 
 
