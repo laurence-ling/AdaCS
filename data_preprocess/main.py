@@ -1,39 +1,7 @@
-import numpy
 import os
-import pickle
-import random
-
-from data_preprocess.tokenization import Tokenizer
-from data_preprocess.lexical_analysis import WordSim
-
-
-def negative_sampling(data):
-    n = len(data)
-    ret = []
-    for i in range(n):
-        k = i
-        while k != i:
-            k = random.randint(0, n - 1)
-        ret.append((data[i][0], data[i][1], data[k][1]))
-    return ret
-
-
-def generate_data(data, word_sim, print_log=True):
-    ret = []
-    for i in range(len(data)):
-        item = data[i]
-        positive_matrix = generate_matrix(item[0], item[1], word_sim)
-        positive_terms = generate_term_list(item[1], word_sim)
-        negative_matrix = generate_matrix(item[0], item[2], word_sim)
-        negative_terms = generate_term_list(item[2], word_sim)
-        ret.append(((positive_matrix, positive_terms), (negative_matrix, negative_terms)))
-        if print_log and i % 100 == 0:
-            print('', i, '/', len(data))
-    return ret
-
-
-def generate_term_list(words, word_sim):
-    return [(word_sim.core_term_dict[word] if word in word_sim.core_terms else 1) for word in words]
+from data_preprocess.lex.token import Tokenizer
+from data_preprocess.lex.word_sim import WordSim
+from data_preprocess.dataset import CodeSearchDataset
 
 
 '''
@@ -56,23 +24,17 @@ if __name__ == '__main__':
     core_term_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../conf/core_terms.txt'))
 
     fasttext_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/fasttext-corpus.txt'))
-    train_output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/train.pkl'))
-    valid_output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/valid.pkl'))
+    train_db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/train.db'))
+    valid_db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/valid.db'))
 
-    train_data, valid_data, test_data = Tokenizer().parse(train_nl_path, valid_nl_path, test_nl_path, train_code_path,
-                                                          valid_code_path, test_code_path)
-    train_data = negative_sampling(train_data)
-    valid_data = negative_sampling(valid_data)
+    train_data = Tokenizer().parse(train_nl_path, train_code_path)
+    valid_data = Tokenizer().parse(valid_nl_path, valid_code_path)
 
     with open(fasttext_corpus_path, 'w') as f:
         for item in train_data:
             f.write(' '.join(item[0]) + '\n')
             f.write(' '.join(item[1]) + '\n')
+    word_sim = WordSim(core_term_path, fasttext_corpus_path)
 
-    word_sim = WordSim(core_term_path)
-    matrices = generate_data(train_data, word_sim)
-    with open(train_output_path, 'wb') as f:
-        pickle.dump(matrices, f)
-    matrices = generate_data(valid_data, word_sim)
-    with open(valid_output_path, 'wb') as f:
-        pickle.dump(matrices, f)
+    CodeSearchDataset.create_dataset(train_data, word_sim, train_db_path)
+    CodeSearchDataset.create_dataset(valid_data, word_sim, valid_db_path)
