@@ -1,3 +1,4 @@
 /.idea/*
 /tmp/*
+/data_preprocess/__pycache__/*
 !.gitkeep
