@@ -1,5 +1,6 @@
 import random
 import warnings
+
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 from gensim import corpora, models, similarities
 

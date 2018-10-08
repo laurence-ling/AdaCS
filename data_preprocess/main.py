@@ -4,14 +4,6 @@ from data_preprocess.lex.word_sim import WordSim
 from data_preprocess.dataset import CodeSearchDataset
 
 
-'''
-output format:
-    * train.pkl/dev.pkl: [ ( (positive_matrix, terms), (negative_matrix,terms) ) ]
-        - each item in this list corresponds to a query;
-        - positive_matrix: the relevance matching matrix of the query against its ground truth code snippet;
-        - negative_matrix: the relevance matching matrix of the query against a randomly sampled negative code snippet;
-        - terms: a list of terms indices in the code snippet.
-'''
 if __name__ == '__main__':
 
     dataset_dir_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/xia18'))
@@ -36,5 +28,5 @@ if __name__ == '__main__':
             f.write(' '.join(item[1]) + '\n')
     word_sim = WordSim(core_term_path, fasttext_corpus_path)
 
-    CodeSearchDataset.create_dataset(train_data, word_sim, train_db_path)
+    #CodeSearchDataset.create_dataset(train_data, word_sim, train_db_path)
     CodeSearchDataset.create_dataset(valid_data, word_sim, valid_db_path)

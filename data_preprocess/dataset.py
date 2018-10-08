@@ -2,14 +2,13 @@ import numpy
 import os
 import pickle
 import sqlite3
-from torch.utils.data import Dataset
 from data_preprocess.lex.doc_sim import BowSimilarity
 
 
-class CodeSearchDataset(Dataset):
+class CodeSearchDataset:
 
     @staticmethod
-    def create_dataset(data, word_sim, db_path, query_max_size=64, top_k=30, sampling_size=5, print_log=True):
+    def create_dataset(data, word_sim, db_path, query_max_size=20, top_k=20, sampling_size=3, print_log=True):
 
         data = [item for item in data if len(item[0]) <= query_max_size]
         core_term_size = len(word_sim.core_terms) + 1
@@ -47,7 +46,7 @@ class CodeSearchDataset(Dataset):
         self.cursor.execute('''SELECT query_max_size, core_term_size FROM conf''')
         self.query_max_size, self.core_term_size = self.cursor.fetchone()
         self.cursor.execute('''SELECT count(*) FROM samples''')
-        self.len = self.cursor.fetchone()
+        self.len = self.cursor.fetchone()[0]
 
     def __del__(self):
         self.conn.close()
@@ -57,7 +56,7 @@ class CodeSearchDataset(Dataset):
 
     def __getitem__(self, idx):
         self.cursor.execute('''SELECT pkl FROM samples where id = ?''', [idx])
-        return pickle.loads(self.cursor.fetchone())
+        return pickle.loads(self.cursor.fetchone()[0])
 
 
 class CodeSearchDataSample:

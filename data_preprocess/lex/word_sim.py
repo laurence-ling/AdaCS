@@ -1,5 +1,4 @@
 import functools
-import os
 
 from fastText import train_unsupervised
 from scipy import spatial
