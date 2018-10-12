@@ -1,4 +1,9 @@
 /.idea/*
 /tmp/*
-/data_preprocess/__pycache__/*
+/models/*
+/__pycache__/*
+/preprocess/__pycache__/*
+/preprocess/lex/__pycache__/*
+/learning/__pycache__/*
+nohup.out
 !.gitkeep

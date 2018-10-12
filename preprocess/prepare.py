@@ -1,11 +1,9 @@
 import os
-from data_preprocess.lex.token import Tokenizer
-from data_preprocess.lex.word_sim import WordSim
-from data_preprocess.dataset import CodeSearchDataset
+from preprocess.lex.token import Tokenizer
+from preprocess.lex.word_sim import WordSim
+from preprocess.dataset import CodeSearchDataset
 
-
-if __name__ == '__main__':
-
+def prepare():
     dataset_dir_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/xia18'))
     train_code_path = dataset_dir_path + '/train.code'
     train_nl_path = dataset_dir_path + '/train.nl'

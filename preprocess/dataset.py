@@ -2,7 +2,7 @@ import numpy
 import os
 import pickle
 import sqlite3
-from data_preprocess.lex.doc_sim import BowSimilarity
+from preprocess.lex.doc_sim import BowSimilarity
 
 
 class CodeSearchDataset:

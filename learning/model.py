@@ -21,10 +21,15 @@ class HybridModule(nn.Module):
         self.fc_1 = nn.Linear(lstm_hidden_size * 2, fc_hidden_size)
         self.fc_2 = nn.Linear(fc_hidden_size, 1)
 
+    def gVar(self, tensor):
+        if torch.cuda.is_available():
+            tensor = tensor.cuda()
+        return tensor
+
     def encode(self, item):
-        sim_vec = torch.Tensor(item.matrix).transpose(0, 1)
+        sim_vec = self.gVar(torch.Tensor(item.matrix).transpose(0, 1))
         core_term_idx = item.core_terms
-        core_term_vec = self.core_term_embedding(torch.LongTensor(core_term_idx))
+        core_term_vec = self.core_term_embedding(self.gVar(torch.LongTensor(core_term_idx)))
         x = torch.cat([sim_vec, core_term_vec], dim=1)
         seq_len, emb_size = x.size()
         x = x.unsqueeze(0)
