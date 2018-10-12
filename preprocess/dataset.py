@@ -8,18 +8,18 @@ from preprocess.lex.doc_sim import BowSimilarity
 class CodeSearchDataset:
 
     @staticmethod
-    def create_dataset(data, word_sim, db_path, query_max_size=20, top_k=20, sampling_size=3, print_log=True):
+    def create_dataset(data, word_sim, db_path, query_max_size=20, code_max_size=400, top_k=20, sampling_size=3, print_log=True):
 
-        data = [item for item in data if len(item[0]) <= query_max_size]
+        data = [item for item in data if len(item[0]) <= query_max_size and len(item[1]) <= code_max_size]
         core_term_size = len(word_sim.core_terms) + 1
 
         if os.path.exists(db_path):
             os.remove(db_path)
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        cursor.execute('''CREATE TABLE conf (query_max_size INT, core_term_size INT)''')
+        cursor.execute('''CREATE TABLE conf (query_max_size INT, code_max_size INT, core_term_size INT)''')
         cursor.execute('''CREATE TABLE samples (id INT PRIMARY KEY, pkl TEXT)''')
-        cursor.execute('''INSERT INTO conf VALUES (?,?)''', [query_max_size, core_term_size])
+        cursor.execute('''INSERT INTO conf VALUES (?,?,?)''', [query_max_size, code_max_size, core_term_size])
         conn.commit()
 
         documents = [item[0] for item in data]
@@ -43,8 +43,8 @@ class CodeSearchDataset:
     def __init__(self, db_path):
         self.conn = sqlite3.connect(db_path)
         self.cursor = self.conn.cursor()
-        self.cursor.execute('''SELECT query_max_size, core_term_size FROM conf''')
-        self.query_max_size, self.core_term_size = self.cursor.fetchone()
+        self.cursor.execute('''SELECT query_max_size, code_max_size, core_term_size FROM conf''')
+        self.query_max_size, self.code_max_size, self.core_term_size = self.cursor.fetchone()
         self.cursor.execute('''SELECT count(*) FROM samples''')
         self.len = self.cursor.fetchone()[0]
 
