@@ -2,10 +2,11 @@ import numpy
 import os
 import pickle
 import sqlite3
+from torch.utils.data import Dataset
 from preprocess.lex.doc_sim import BowSimilarity
 
 
-class CodeSearchDataset:
+class CodeSearchDataset(Dataset):
 
     @staticmethod
     def create_dataset(data, word_sim, db_path, query_max_size=20, code_max_size=400, top_k=20, sampling_size=3, print_log=True):
@@ -55,8 +56,35 @@ class CodeSearchDataset:
         return self.len
 
     def __getitem__(self, idx):
+        '''
+        :param idx: sample index
+        :return: matrix shape(K, code_max_size, query_max_size), terms shape(K, code_max_size
+        '''
         self.cursor.execute('''SELECT pkl FROM samples where id = ?''', [idx])
-        return pickle.loads(self.cursor.fetchone()[0])
+        sample = pickle.loads(self.cursor.fetchone()[0])
+        neg_samples = sample.neg_data_list
+        pos_samples = [sample.pos_data]*len(neg_samples)
+        neg_matrix = numpy.asarray([self.pad_matrix(numpy.transpose(neg.matrix))
+                                    for neg in neg_samples])
+        pos_matrix = numpy.asarray([self.pad_matrix(numpy.transpose(pos.matrix))
+                                    for pos in pos_samples])
+        neg_core_terms = numpy.asarray([self.pad_terms(neg.core_terms) for neg in neg_samples])
+        pos_core_terms = numpy.asarray([self.pad_terms(pos.core_terms) for pos in pos_samples])
+        return pos_matrix, neg_matrix, pos_core_terms, neg_core_terms
+
+    def pad_matrix(self, matrix):
+        padded = numpy.zeros([self.code_max_size, self.query_max_size])
+        slen = len(matrix)
+        assert slen < self.code_max_size
+        padded[:slen, :] = matrix
+        return padded
+
+    def pad_terms(self, terms):
+        seq = [0]*self.code_max_size
+        tlen= len(terms)
+        assert tlen < self.code_max_size
+        seq[:tlen] = seq
+        return seq
 
 
 class CodeSearchDataSample:

@@ -1,14 +1,13 @@
 from __future__ import absolute_import
 
 import os
-import configparser
 import torch
 import torch.optim as optim
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from learning.model import HybridModule
 from preprocess.dataset import CodeSearchDataset
-from preprocess import dataset
 
 
 class CodeSearcher:
@@ -41,19 +40,14 @@ class CodeSearcher:
         save_round = int(self.conf['train']['save_round'])
         nb_epoch = int(self.conf['train']['nb_epoch'])
         batch_size = int(self.conf['train']['batch_size'])
+        dataloader = DataLoader(self.trainset, batch_size=batch_size, shuffle=True,
+                                num_workers=1, collate_fn=collate_fn)
         optimizer = optim.Adam(self.model.parameters(), lr=float(self.conf['train']['lr']))
 
         for epoch in range(nb_epoch):
-            shuffle_index = torch.randperm(train_size).tolist()
             epoch_loss = 0
-            batch_iter = [shuffle_index[i: i+batch_size] for i in range(0, train_size, batch_size)]
-            for batch_index in tqdm(batch_iter):
-                loss = 0
-                for i in batch_index:
-                    sample = self.trainset[i]
-                    pos_sample = sample.pos_data
-                    for neg_sample in sample.neg_data_list:
-                        loss += self.model(pos_sample, neg_sample)
+            for pos_matrix, pos_core_terms, neg_matrix, neg_core_terms in tqdm(dataloader):
+                loss = self.model(gVar(pos_matrix), gVar(pos_core_terms), gVar(neg_matrix), gVar(neg_core_terms))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -63,13 +57,17 @@ class CodeSearcher:
                 self.save_model(model, epoch)
 
 
-def get_config():
-    config = configparser.ConfigParser()
-    config.read('../conf/config.ini')
-    return config
+def collate_fn(batch):
+    # return matrix (batch_sz*K, code_max_size, query_max_size), terms (batch_sz*K, code_max_size)
+    assert isinstance(batch, list) and len(batch) > 0
+    pos_matrix, neg_matrix, pos_core_terms, neg_core_terms = zip(*batch)
+    pos_matrix = torch.cat([torch.FloatTensor(ele) for ele in pos_matrix])
+    neg_matrix = torch.cat([torch.FloatTensor(ele) for ele in neg_matrix])
+    pos_core_terms = torch.cat([torch.LongTensor(ele) for ele in pos_core_terms])
+    neg_core_terms = torch.cat([torch.LongTensor(ele) for ele in neg_core_terms])
+    return pos_matrix, pos_core_terms, neg_matrix, neg_core_terms
 
-
-if __name__ == '__main__':
-    conf = get_config()
-    searcher = CodeSearcher(conf)
-    searcher.train()
+def gVar(tensor):
+    if torch.cuda.is_available():
+        tensor = tensor.cuda()
+    return tensor
