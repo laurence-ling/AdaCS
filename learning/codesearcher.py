@@ -55,6 +55,7 @@ class CodeSearcher:
             print('epoch', epoch, ': Loss =', epoch_loss/train_size)
             if epoch % save_round == 0:
                 self.save_model(model, epoch)
+        self.save_model(model, epoch)
 
 
 def collate_fn(batch):

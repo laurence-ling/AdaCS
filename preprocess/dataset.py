@@ -48,6 +48,7 @@ class CodeSearchDataset(Dataset):
         self.query_max_size, self.code_max_size, self.core_term_size = self.cursor.fetchone()
         self.cursor.execute('''SELECT count(*) FROM samples''')
         self.len = self.cursor.fetchone()[0]
+        print("dataset size:{0}, query_max_len:{1}, code_max_len:{2}".format(self.len, self.query_max_size, self.code_max_size))
 
     def __del__(self):
         self.conn.close()
@@ -75,15 +76,15 @@ class CodeSearchDataset(Dataset):
     def pad_matrix(self, matrix):
         padded = numpy.zeros([self.code_max_size, self.query_max_size])
         slen = len(matrix)
-        assert slen < self.code_max_size
+        assert slen <= self.code_max_size
         padded[:slen, :] = matrix
         return padded
 
     def pad_terms(self, terms):
         seq = [0]*self.code_max_size
         tlen= len(terms)
-        assert tlen < self.code_max_size
-        seq[:tlen] = seq
+        assert tlen <= self.code_max_size
+        seq[:tlen] = terms
         return seq
 
 
