@@ -37,7 +37,7 @@ def main():
     if option.prepare:
         logger.info("preparing dataset...")
         prepare()
-    if option.mode == 'train':
+    elif option.mode == 'train':
         logger.info("start training model...")
         searcher.train()
 

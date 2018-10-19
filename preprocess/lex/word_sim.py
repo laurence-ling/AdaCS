@@ -7,9 +7,10 @@ from scipy import spatial
 class WordSim:
 
     def __init__(self, core_term_path, fasttext_corpus_path):
-        self.word_embeddings = WordEmbeddings(fasttext_corpus_path)
         with open(core_term_path, 'r') as f:
-            self.core_terms = set([word for word in f.readlines() if len(word) > 0])
+            self.core_terms = set([word.strip() for word in f.readlines() if len(word.strip()) > 0])
+        # print(self.core_terms)
+        self.word_embeddings = WordEmbeddings(fasttext_corpus_path)
         self.core_term_dict = {}
         index = 2
         for core_term in self.core_terms:
