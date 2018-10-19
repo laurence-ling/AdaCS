@@ -46,6 +46,9 @@ class CodeSearchDataset(Dataset):
         self.cursor = self.conn.cursor()
         self.cursor.execute('''SELECT query_max_size, code_max_size, core_term_size FROM conf''')
         self.query_max_size, self.code_max_size, self.core_term_size = self.cursor.fetchone()
+        self.cursor.execute('''SELECT pkl FROM samples WHERE id = 0''')
+        sample = pickle.loads(self.cursor.fetchone()[0])
+        self.negsample_size = len(sample.neg_data_list)
         self.cursor.execute('''SELECT count(*) FROM samples''')
         self.len = self.cursor.fetchone()[0]
         print("dataset size:{0}, query_max_len:{1}, code_max_len:{2}".format(self.len, self.query_max_size, self.code_max_size))
