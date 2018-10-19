@@ -46,20 +46,25 @@ class CodeSearcher:
         save_round = int(self.conf['train']['save_round'])
         nb_epoch = int(self.conf['train']['nb_epoch'])
         batch_size = int(self.conf['train']['batch_size'])
-        dataloader = DataLoader(self.trainset, batch_size=batch_size, shuffle=True,
-                                num_workers=1, collate_fn=collate_fn)
+        dataloader = DataLoader(self.trainset, batch_size=batch_size, shuffle=True, num_workers=1)
         optimizer = optim.Adam(self.model.parameters(), lr=float(self.conf['train']['lr']))
 
         for epoch in range(nb_epoch):
             epoch_loss = 0
-            for pos_matrix, pos_core_terms, neg_matrix, neg_core_terms in tqdm(dataloader):
-                loss = self.model(self.gVar(pos_matrix), self.gVar(pos_core_terms), self.gVar(neg_matrix), self.gVar(neg_core_terms))
+            for pos_matrix, pos_core_terms, pos_length, neg_matrix, neg_core_terms, neg_length in tqdm(dataloader):
+                #print(pos_matrix.size(), neg_matrix.size(), pos_length, neg_length)
+                pos_length = [self.gVar(x) for x in pos_length]
+                neg_length = [self.gVar(x) for x in neg_length]
+                loss = self.model(self.gVar(pos_matrix), self.gVar(pos_core_terms), pos_length,
+                                  self.gVar(neg_matrix), self.gVar(neg_core_terms), neg_length)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
                 epoch_loss += loss.item()
             print('epoch', epoch, ': Loss =', epoch_loss/train_size)
+            self.model.eval()
             self.eval('tmp/valid.db')
+            self.model.train()
             if epoch % save_round == 0:
                 self.save_model(model, epoch)
         self.save_model(model, epoch)
@@ -68,26 +73,27 @@ class CodeSearcher:
         self.testset = CodeSearchDataset(os.path.join(self.wkdir, db_path))
         test_size = len(self.testset)
         print('start eval... testset size: ', test_size)
-        K = self.testset.negsample_size
         batch_size = int(self.conf['train']['batch_size'])
-        dataloader = DataLoader(self.testset, batch_size=batch_size, shuffle=True,
-                                num_workers=1, collate_fn=collate_fn)
+        dataloader = DataLoader(self.testset, batch_size=batch_size, shuffle=True, num_workers=1)
         
         def top1_acc(pos_score, neg_score):
             samples = len(pos_score)
-            # all element in neg_score[i] should < pos_socre[i], so the sum = 0
-            gt_vec = [torch.sum(neg_score[i] > pos_score[i]) for i in range(samples)]
-            gt_num = sum([x.item() == 0 for x in gt_vec])
-            return gt_num/samples
+            count = 0
+            for i, pos_n in enumerate(pos_score):
+                if pos_n > neg_score[i].max():
+                    count += 1
+            return count/samples
         
         accs = []
-        for pos_matrix, pos_core_terms, neg_matrix, neg_core_terms in tqdm(dataloader):
-            pos_score = self.model.encode(self.gVar(pos_matrix), self.gVar(pos_core_terms))
-            neg_score = self.model.encode(self.gVar(neg_matrix), self.gVar(neg_core_terms))
+        for pos_matrix, pos_core_terms, pos_length, neg_matrix, neg_core_terms, neg_length in tqdm(dataloader):
+            pos_length = [self.gVar(x) for x in pos_length]
+            neg_length = [self.gVar(x) for x in neg_length]
+            pos_score = self.model.encode(self.gVar(pos_matrix), pos_length, self.gVar(pos_core_terms))
+            neg_score = self.model.encode(self.gVar(neg_matrix), neg_length, self.gVar(neg_core_terms))
             # (batch_sz*K, 1) -> batch_sz*K
             pos_score, neg_score = pos_score.squeeze(1), neg_score.squeeze(1)
+            K = int(neg_score.size()[0] / pos_score.size()[0])
             # ->(batch_sz, K)
-            pos_score = [pos_score[i*K: i*(K+1)] for i in range(batch_size)]
             neg_score = [neg_score[i*K: i*(K+1)] for i in range(batch_size)]
             acc = top1_acc(pos_score, neg_score)
             accs.append(acc)
