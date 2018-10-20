@@ -7,7 +7,6 @@ import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-from learning.model import HybridModule
 from learning.codesearcher import CodeSearcher
 from preprocess.prepare import prepare
 

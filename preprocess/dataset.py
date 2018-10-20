@@ -51,7 +51,7 @@ class CodeSearchDataset(Dataset):
         self.negsample_size = len(sample.neg_data_list)
         self.cursor.execute('''SELECT count(*) FROM samples''')
         self.len = self.cursor.fetchone()[0]
-        print("dataset size:{0}, query_max_len:{1}, code_max_len:{2}".format(self.len, self.query_max_size, self.code_max_size))
+        # print("dataset size:{0}, query_max_len:{1}, code_max_len:{2}".format(self.len, self.query_max_size, self.code_max_size))
 
     def __del__(self):
         self.conn.close()
