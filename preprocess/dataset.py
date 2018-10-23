@@ -9,7 +9,7 @@ from preprocess.lex.doc_sim import BowSimilarity
 class CodeSearchDataset(Dataset):
 
     @staticmethod
-    def create_dataset(data, word_sim, db_path, query_max_size=20, code_max_size=400, top_k=20, sampling_size=3, print_log=True):
+    def create_dataset(data, word_sim, db_path, query_max_size=20, code_max_size=400, top_k=40, sampling_size=5, print_log=True):
 
         data = [item for item in data if len(item[0]) <= query_max_size and len(item[1]) <= code_max_size]
         core_term_size = len(word_sim.core_terms) + 2
@@ -68,8 +68,8 @@ class CodeSearchDataset(Dataset):
                                     for neg in neg_samples])
         pos_matrix = numpy.asarray([self.pad_matrix(numpy.transpose(pos.matrix))
                                     for pos in pos_samples])
-        neg_lengths = [len(neg.core_terms) for neg in neg_samples]
-        pos_lengths = [len(pos.core_terms) for pos in pos_samples]
+        neg_lengths = numpy.asarray([len(neg.core_terms) for neg in neg_samples])
+        pos_lengths = numpy.asarray([len(pos.core_terms) for pos in pos_samples])
         neg_core_terms = numpy.asarray([self.pad_terms(neg.core_terms) for neg in neg_samples])
         pos_core_terms = numpy.asarray([self.pad_terms(pos.core_terms) for pos in pos_samples])
         return pos_matrix, pos_core_terms, pos_lengths, neg_matrix, neg_core_terms, neg_lengths

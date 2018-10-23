@@ -35,12 +35,11 @@ class CodeSearcher:
         self.core_term_size = self.trainset.core_term_size
         model = HybridModule(
             self.query_max_size, self.core_term_size,
-            int(self.conf['model']['core_term_embedding_size']), int(self.conf['model']['lstm_layers']),
-            int(self.conf['model']['lstm_hidden_size']), int(self.conf['model']['fc_hidden_size']),
+            int(self.conf['model']['core_term_embedding_size']), int(self.conf['model']['lstm_hidden_size']),
+            int(self.conf['model']['lstm_layers']),
             float(self.conf['train']['margin']))
         if torch.cuda.device_count() > 1:
             print("let's use ", torch.cuda.device_count(), "GPUs")
-            #model = nn.DataParallel(model)
         self.model = model.to(self.device)
 
         save_round = int(self.conf['train']['save_round'])
@@ -73,7 +72,7 @@ class CodeSearcher:
             test_size = len(test_data)
             print('start eval... testset size: ', test_size)
         batch_size = int(self.conf['train']['batch_size'])
-        dataloader = DataLoader(test_data, batch_size=len(test_data), shuffle=True)
+        dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
         
         def top1_acc(pos_score, neg_score):
             samples = len(pos_score)
@@ -87,10 +86,8 @@ class CodeSearcher:
         for pos_matrix, pos_core_terms, pos_length, neg_matrix, neg_core_terms, neg_length in dataloader:
             pos_length = [self.gVar(x) for x in pos_length]
             neg_length = [self.gVar(x) for x in neg_length]
-            pos_score = self.model.encode(self.gVar(pos_matrix), pos_length, self.gVar(pos_core_terms)).data.numpy()
-            neg_score = self.model.encode(self.gVar(neg_matrix), neg_length, self.gVar(neg_core_terms)).data.numpy()
-            pos_score, neg_score = pos_score.squeeze(1), neg_score.squeeze(1)
-            K = int(neg_score.shape[0] / pos_score.shape[0])
+            pos_score = self.model.encode(self.gVar(pos_matrix), pos_length, self.gVar(pos_core_terms)).data.cpu().numpy()
+            neg_score = self.model.encode(self.gVar(neg_matrix), neg_length, self.gVar(neg_core_terms)).data.cpu().numpy()
             neg_score = np.split(neg_score, len(pos_score))
             acc = top1_acc(pos_score, neg_score)
             accs.append(acc)
