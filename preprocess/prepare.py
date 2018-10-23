@@ -26,5 +26,5 @@ def prepare():
             f.write(' '.join(item[1]) + '\n')
     word_sim = WordSim(core_term_path, fasttext_corpus_path)
 
-    #CodeSearchDataset.create_dataset(train_data, word_sim, train_db_path)
+    CodeSearchDataset.create_dataset(train_data, word_sim, train_db_path)
     CodeSearchDataset.create_dataset(valid_data, word_sim, valid_db_path)

@@ -29,23 +29,21 @@ class CodeSearcher:
         model.load_state_dict(torch.load(self.wkdir+'models/epoch%d.h5'%epoch))
 
     def train(self):
-        self.trainset = CodeSearchDataset(os.path.join(self.wkdir, './tmp/valid.db'))
-        train_size = len(self.trainset)
-        self.query_max_size = self.trainset.query_max_size
-        self.core_term_size = self.trainset.core_term_size
-        model = HybridModule(
-            self.query_max_size, self.core_term_size,
-            int(self.conf['model']['core_term_embedding_size']), int(self.conf['model']['lstm_hidden_size']),
-            int(self.conf['model']['lstm_layers']),
-            float(self.conf['train']['margin']))
+        train_data = CodeSearchDataset(os.path.join(self.wkdir, './tmp/train.db'))
+        valid_data = CodeSearchDataset(os.path.join(self.wkdir, './tmp/valid.db'))
+        train_size = len(train_data)
         if torch.cuda.device_count() > 1:
             print("let's use ", torch.cuda.device_count(), "GPUs")
-        self.model = model.to(self.device)
+        self.model = HybridModule(
+            train_data.query_max_size, train_data.core_term_size,
+            int(self.conf['model']['core_term_embedding_size']), int(self.conf['model']['lstm_hidden_size']),
+            int(self.conf['model']['lstm_layers']),
+            float(self.conf['train']['margin'])).to(self.device)
 
         save_round = int(self.conf['train']['save_round'])
         nb_epoch = int(self.conf['train']['nb_epoch'])
         batch_size = int(self.conf['train']['batch_size'])
-        dataloader = DataLoader(self.trainset, batch_size=batch_size, shuffle=True)
+        dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
         optimizer = optim.Adam(self.model.parameters(), lr=float(self.conf['train']['lr']))
 
         for epoch in range(nb_epoch):
@@ -61,13 +59,12 @@ class CodeSearcher:
                 epoch_loss += loss.item()
             print('epoch', epoch, ': Loss =', epoch_loss / train_size)
             if epoch % save_round == 0:
-                self.save_model(model, epoch)
-            self.model.eval()
-            self.eval('tmp/valid.db')
+                self.save_model(self.model, epoch)
+                self.model.eval()
+            self.eval(valid_data)
             self.model.train()
 
-    def eval(self, db_path, print_log=False):
-        test_data = CodeSearchDataset(os.path.join(self.wkdir, db_path))
+    def eval(self, test_data, print_log=False):
         if print_log:
             test_size = len(test_data)
             print('start eval... testset size: ', test_size)
