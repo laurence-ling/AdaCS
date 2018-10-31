@@ -35,8 +35,8 @@ def main():
     searcher = CodeSearcher(conf)
     if option.prepare:
         logger.info("preparing dataset...")
-        prepare()
-    elif option.mode == 'train':
+        prepare(conf)
+    if option.mode == 'train':
         logger.info("start training model...")
         searcher.train()
 

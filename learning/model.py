@@ -53,6 +53,6 @@ class HybridModule(nn.Module):
         neg_score = self.encode(neg_matrix, neg_lengths, neg_core_terms)
         k = int(neg_score.shape[0]/pos_score.shape[0])
         pos_score = pos_score.view(-1, 1).expand(pos_score.shape[0], k).contiguous().view(-1, 1).squeeze()
-        loss = torch.sigmoid(self.margin - pos_score + neg_score).clamp(min=1e-6).sum() / k
+        loss = (self.margin - torch.tanh(pos_score - neg_score)).clamp(min=1e-6).mean()
         return loss
 

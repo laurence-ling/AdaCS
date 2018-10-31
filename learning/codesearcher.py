@@ -57,10 +57,10 @@ class CodeSearcher:
                 loss.backward()
                 optimizer.step()
                 epoch_loss += loss.item()
-            print('epoch', epoch, ': Loss =', epoch_loss / train_size)
+            print('epoch', epoch, ': Loss =', epoch_loss / (train_size/batch_size))
             if epoch % save_round == 0:
                 self.save_model(self.model, epoch)
-                self.model.eval()
+            self.model.eval()
             self.eval(valid_data)
             self.model.train()
 
@@ -79,7 +79,30 @@ class CodeSearcher:
                     count += 1
             return count/samples
         
+        def top_k_acc(pos_score, neg_score, k):
+            ranks = compute_rank(pos_score, neg_score)
+            result = [1 for r in ranks if r <= k]
+            count = sum(result)
+            return count/len(ranks)
+
+
+        def MRR(pos_score, neg_score):
+            ranks = compute_rank(pos_score, neg_score)
+            reciprocal = [1/r for r in ranks]
+            return sum(reciprocal)/len(ranks)
+
+        def compute_rank(pos_score, neg_score):
+            ranks = [0]*len(pos_score)
+            for i, pos_ in enumerate(pos_score):
+                sort_neg_score = sorted(neg_score[i], reverse=True)
+                for j, neg_ in enumerate(sort_neg_score):
+                    if pos_ > neg_:
+                        ranks[i] = j + 1
+                        break
+            return ranks
+
         accs = []
+        acc_3 = []
         for pos_matrix, pos_core_terms, pos_length, neg_matrix, neg_core_terms, neg_length in dataloader:
             pos_length = [self.gVar(x) for x in pos_length]
             neg_length = [self.gVar(x) for x in neg_length]
@@ -87,8 +110,11 @@ class CodeSearcher:
             neg_score = self.model.encode(self.gVar(neg_matrix), neg_length, self.gVar(neg_core_terms)).data.cpu().numpy()
             neg_score = np.split(neg_score, len(pos_score))
             acc = top1_acc(pos_score, neg_score)
+            acc3 = top_k_acc(pos_score, neg_score, 3)
             accs.append(acc)
-        print('ACC: {}'.format(np.mean(accs)))
+            acc_3.append(acc3)
+        print('ACC: {}, ACC_3: {}'.format(np.mean(accs), np.mean(acc_3)))
 
     def gVar(self, tensor):
         return tensor.to(self.device)
+

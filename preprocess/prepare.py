@@ -3,7 +3,7 @@ from preprocess.lex.token import Tokenizer
 from preprocess.lex.word_sim import WordSim
 from preprocess.dataset import CodeSearchDataset
 
-def prepare():
+def prepare(conf):
     dataset_dir_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/xia18'))
     train_code_path = dataset_dir_path + '/train.code'
     train_nl_path = dataset_dir_path + '/train.nl'
@@ -26,5 +26,9 @@ def prepare():
             f.write(' '.join(item[1]) + '\n')
     word_sim = WordSim(core_term_path, fasttext_corpus_path)
 
-    CodeSearchDataset.create_dataset(train_data, word_sim, train_db_path)
-    CodeSearchDataset.create_dataset(valid_data, word_sim, valid_db_path)
+    #CodeSearchDataset.create_dataset(train_data, word_sim, train_db_path)
+    CodeSearchDataset.create_dataset(valid_data, word_sim, valid_db_path,
+                                     int(conf['data']['query_max_len']),
+                                     int(conf['data']['code_max_len']),
+                                     int(conf['data']['neg_top_k']),
+                                     int(conf['data']['neg_sample_size']))
