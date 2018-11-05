@@ -9,7 +9,7 @@ from preprocess.lex.doc_sim import BowSimilarity
 class CodeSearchDataset(Dataset):
 
     @staticmethod
-    def create_dataset(data, word_sim, db_path, query_max_size=20, code_max_size=400, top_k=40, sampling_size=5, print_log=True):
+    def create_dataset(data, word_sim, db_path, query_max_size, code_max_size, top_k, sampling_size, print_log=True):
 
         data = [item for item in data if len(item[0]) <= query_max_size and len(item[1]) <= code_max_size]
         core_term_size = len(word_sim.core_terms) + 2
@@ -47,11 +47,8 @@ class CodeSearchDataset(Dataset):
         self.cursor.execute('''SELECT query_max_size, code_max_size, core_term_size FROM conf''')
         self.query_max_size, self.code_max_size, self.core_term_size = self.cursor.fetchone()
         self.cursor.execute('''SELECT pkl FROM samples WHERE id = 0''')
-        sample = pickle.loads(self.cursor.fetchone()[0])
-        self.negsample_size = len(sample.neg_data_list)
         self.cursor.execute('''SELECT count(*) FROM samples''')
         self.len = self.cursor.fetchone()[0]
-        # print("dataset size:{0}, query_max_len:{1}, code_max_len:{2}".format(self.len, self.query_max_size, self.code_max_size))
 
     def __del__(self):
         self.conn.close()

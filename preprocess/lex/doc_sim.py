@@ -16,11 +16,11 @@ class BowSimilarity:
                                                        num_features=len(dictionary.keys()))
 
     def negative_sampling(self, query_id, top_k, sampling_size):
-        results = [item[0] for item in self.__search(query_id, top_k) if item[0] != query_id]
+        results = self.__search(query_id, top_k)
         random.shuffle(results)
         return results[:sampling_size]
 
     def __search(self, query_id, top_k):
         query_tfidf = self.vectors[query_id]
         sim = self.sim[query_tfidf]
-        return sorted(enumerate(sim), key=lambda item: -item[1])[:top_k]
+        return [item[0] for item in sorted(enumerate(sim), key=lambda item: -item[1]) if item[0] != query_id][:top_k]

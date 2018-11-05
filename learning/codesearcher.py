@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import os
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -19,18 +18,18 @@ class CodeSearcher:
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     def save_model(self, model, epoch):
-        model_dir = self.wkdir + 'models/'
+        model_dir = os.path.join(self.wkdir, 'models')
         if not os.path.exists(model_dir):
             os.mkdir(model_dir)
-        torch.save(model.state_dict(), model_dir +'/epoch%d.h5' % epoch)
+        torch.save(model.state_dict(), os.path.join(model_dir, 'epoch%d.h5' % epoch))
 
     def load_model(self, model, epoch):
         assert os.path.exists(self.wkdir+'models/epoch%d.h5'%epoch), 'Weights not found.'
         model.load_state_dict(torch.load(self.wkdir+'models/epoch%d.h5'%epoch))
 
     def train(self):
-        train_data = CodeSearchDataset(os.path.join(self.wkdir, './tmp/train.db'))
-        valid_data = CodeSearchDataset(os.path.join(self.wkdir, './tmp/valid.db'))
+        train_data = CodeSearchDataset(os.path.join(self.wkdir, self.conf['data']['train_db_path']))
+        valid_data = CodeSearchDataset(os.path.join(self.wkdir, self.conf['data']['valid_db_path']))
         train_size = len(train_data)
         if torch.cuda.device_count() > 1:
             print("let's use ", torch.cuda.device_count(), "GPUs")
@@ -71,28 +70,19 @@ class CodeSearcher:
         batch_size = int(self.conf['train']['batch_size'])
         dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
         
-        def top1_acc(pos_score, neg_score):
-            samples = len(pos_score)
-            count = 0
-            for i, pos_n in enumerate(pos_score):
-                if pos_n > neg_score[i].max():
-                    count += 1
-            return count/samples
-        
         def top_k_acc(pos_score, neg_score, k):
             ranks = compute_rank(pos_score, neg_score)
             result = [1 for r in ranks if r <= k]
             count = sum(result)
             return count/len(ranks)
 
-
-        def MRR(pos_score, neg_score):
+        def mrr(pos_score, neg_score):
             ranks = compute_rank(pos_score, neg_score)
             reciprocal = [1/r for r in ranks]
             return sum(reciprocal)/len(ranks)
 
         def compute_rank(pos_score, neg_score):
-            ranks = [0]*len(pos_score)
+            ranks = [len(neg_score[0])+1]*len(pos_score)
             for i, pos_ in enumerate(pos_score):
                 sort_neg_score = sorted(neg_score[i], reverse=True)
                 for j, neg_ in enumerate(sort_neg_score):
@@ -101,19 +91,23 @@ class CodeSearcher:
                         break
             return ranks
 
+        top_k = 5
         accs = []
-        acc_3 = []
+        mrrs = []
+        for i in range(top_k):
+            accs.append([])
         for pos_matrix, pos_core_terms, pos_length, neg_matrix, neg_core_terms, neg_length in dataloader:
             pos_length = [self.gVar(x) for x in pos_length]
             neg_length = [self.gVar(x) for x in neg_length]
             pos_score = self.model.encode(self.gVar(pos_matrix), pos_length, self.gVar(pos_core_terms)).data.cpu().numpy()
             neg_score = self.model.encode(self.gVar(neg_matrix), neg_length, self.gVar(neg_core_terms)).data.cpu().numpy()
             neg_score = np.split(neg_score, len(pos_score))
-            acc = top1_acc(pos_score, neg_score)
-            acc3 = top_k_acc(pos_score, neg_score, 3)
-            accs.append(acc)
-            acc_3.append(acc3)
-        print('ACC: {}, ACC_3: {}'.format(np.mean(accs), np.mean(acc_3)))
+            for i in range(top_k):
+                accs[i].append(top_k_acc(pos_score, neg_score, i+1))
+            mrrs.append(mrr(pos_score, neg_score))
+        for i in range(top_k):
+            print('Hit@{}: {}'.format(i+1, np.mean(accs[i])))
+        print('MRR: {}'.format(np.mean(mrrs)))
 
     def gVar(self, tensor):
         return tensor.to(self.device)

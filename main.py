@@ -13,11 +13,11 @@ from preprocess.prepare import prepare
 
 def parse_args():
     parser = argparse.ArgumentParser("train and test code search model")
+    parser.add_argument("-p", "--prepare", action="store_true", default=False, help="Prepare dataset first.")
     parser.add_argument("--mode", choices=["train", "eval"], default="train",
                         help="The mode to run. The `train` mode trains a model;"
                         "the `eval` mode evaluates the model.")
     parser.add_argument("-v", "--verbose", default=True, help="Print verbose info.")
-    parser.add_argument("-p", "--prepare", action="store_true", default=False, help="Prepare dataset first.")
     option = parser.parse_args()
     return option
 
@@ -35,8 +35,13 @@ def main():
     searcher = CodeSearcher(conf)
     if option.prepare:
         logger.info("preparing dataset...")
-        prepare(conf)
-    if option.mode == 'train':
+        prepare(conf, conf['data']['train_code_path'], conf['data']['train_nl_path'],
+                conf['data']['train_db_path'], train_mode=True)
+        prepare(conf, conf['data']['valid_code_path'], conf['data']['valid_nl_path'],
+                conf['data']['valid_db_path'], train_mode=False)
+        prepare(conf, conf['data']['test_code_path'], conf['data']['test_nl_path'],
+                conf['data']['test_db_path'], train_mode=False)
+    elif option.mode == 'train':
         logger.info("start training model...")
         searcher.train()
 
