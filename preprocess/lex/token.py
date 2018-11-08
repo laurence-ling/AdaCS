@@ -10,7 +10,7 @@ class Tokenizer:
     def __combine(nl_dict, code_dict):
         ret = []
         for key in nl_dict.keys():
-            ret.append((nl_dict[key], code_dict[key]))
+            ret.append((nl_dict[key], code_dict[key], key))
         return ret
 
     def __parse_file(self, file_path):

@@ -33,7 +33,7 @@ class CodeSearchDataset(Dataset):
             pos_data = MatchingMatrix(item[0], item[1], word_sim, query_max_size)
             neg_idx_list = doc_sim.negative_sampling(i, top_k, sampling_size)
             neg_data_list = [MatchingMatrix(item[0], data[idx][1], word_sim, query_max_size) for idx in neg_idx_list]
-            pkl = pickle.dumps(CodeSearchDataSample(pos_data, neg_data_list))
+            pkl = pickle.dumps(CodeSearchDataSample(item[2], pos_data, neg_data_list))
             samples_buffer.append([i, pkl])
             if i > 0 and (i % 1000 == 0 or i + 1 == range(len(data))):
                 cursor.executemany('''INSERT INTO samples VALUES (?,?)''', samples_buffer)
@@ -88,7 +88,8 @@ class CodeSearchDataset(Dataset):
 
 class CodeSearchDataSample:
 
-    def __init__(self, pos_data, neg_data_list):
+    def __init__(self, id, pos_data, neg_data_list):
+        self.id = id
         self.pos_data = pos_data
         self.neg_data_list = neg_data_list
 
