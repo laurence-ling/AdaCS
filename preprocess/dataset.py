@@ -59,6 +59,7 @@ class CodeSearchDataset(Dataset):
     def __getitem__(self, idx):
         self.cursor.execute('''SELECT pkl FROM samples where id = ?''', [idx])
         sample = pickle.loads(self.cursor.fetchone()[0])
+        query_id = sample.id
         neg_samples = sample.neg_data_list
         pos_samples = [sample.pos_data]
         neg_matrix = numpy.asarray([self.pad_matrix(numpy.transpose(neg.matrix))
@@ -69,7 +70,7 @@ class CodeSearchDataset(Dataset):
         pos_lengths = numpy.asarray([len(pos.core_terms) for pos in pos_samples])
         neg_core_terms = numpy.asarray([self.pad_terms(neg.core_terms) for neg in neg_samples])
         pos_core_terms = numpy.asarray([self.pad_terms(pos.core_terms) for pos in pos_samples])
-        return pos_matrix, pos_core_terms, pos_lengths, neg_matrix, neg_core_terms, neg_lengths
+        return query_id, pos_matrix, pos_core_terms, pos_lengths, neg_matrix, neg_core_terms, neg_lengths
 
     def pad_matrix(self, matrix):
         padded = numpy.zeros([self.code_max_size, self.query_max_size])

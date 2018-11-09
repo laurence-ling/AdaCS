@@ -47,7 +47,7 @@ class CodeSearcher:
 
         for epoch in range(nb_epoch):
             epoch_loss = 0
-            for pos_matrix, pos_core_terms, pos_length, neg_matrix, neg_core_terms, neg_length in tqdm(dataloader):
+            for _, pos_matrix, pos_core_terms, pos_length, neg_matrix, neg_core_terms, neg_length in tqdm(dataloader):
                 pos_length = [self.gVar(x) for x in pos_length]
                 neg_length = [self.gVar(x) for x in neg_length]
                 loss = self.model(self.gVar(pos_matrix), self.gVar(pos_core_terms), pos_length,
@@ -81,6 +81,11 @@ class CodeSearcher:
             reciprocal = [1/r for r in ranks]
             return sum(reciprocal)/len(ranks)
 
+        def mrr_list(pos_score, neg_score):
+            ranks = compute_rank(pos_score, neg_score)
+            reciprocal = [1 / r for r in ranks]
+            return reciprocal
+
         def compute_rank(pos_score, neg_score):
             ranks = [len(neg_score[0])+1]*len(pos_score)
             for i, pos_ in enumerate(pos_score):
@@ -92,11 +97,10 @@ class CodeSearcher:
             return ranks
 
         top_k = 5
-        accs = []
+        qid_mrr = {}
+        accs = [[] for _ in range(top_k)]
         mrrs = []
-        for i in range(top_k):
-            accs.append([])
-        for pos_matrix, pos_core_terms, pos_length, neg_matrix, neg_core_terms, neg_length in dataloader:
+        for q_id, pos_matrix, pos_core_terms, pos_length, neg_matrix, neg_core_terms, neg_length in dataloader:
             pos_length = [self.gVar(x) for x in pos_length]
             neg_length = [self.gVar(x) for x in neg_length]
             pos_score = self.model.encode(self.gVar(pos_matrix), pos_length, self.gVar(pos_core_terms)).data.cpu().numpy()
@@ -105,9 +109,17 @@ class CodeSearcher:
             for i in range(top_k):
                 accs[i].append(top_k_acc(pos_score, neg_score, i+1))
             mrrs.append(mrr(pos_score, neg_score))
+            l_mrr = mrr_list(pos_score, neg_score)
+            for i, _id in enumerate(q_id):
+                qid_mrr[_id] = l_mrr[i]
         for i in range(top_k):
             print('Hit@{}: {}'.format(i+1, np.mean(accs[i])))
         print('MRR: {}'.format(np.mean(mrrs)))
+
+        bad_cases = sorted(qid_mrr.items(), key=lambda x: x[1])
+        bad_cases = bad_cases[:100]
+        print(bad_cases)
+
 
     def gVar(self, tensor):
         return tensor.to(self.device)
