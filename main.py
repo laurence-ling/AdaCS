@@ -4,11 +4,13 @@ import os
 import argparse
 import configparser
 import logging
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 from learning.codesearcher import CodeSearcher
 from preprocess.prepare import prepare
+from preprocess.dataset import CodeSearchDataset
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
 def parse_args():
@@ -29,6 +31,7 @@ def get_config():
     print(config.options('data'))
     return config
 
+
 def main():
     conf = get_config()
     option = parse_args()
@@ -44,6 +47,12 @@ def main():
     elif option.mode == 'train':
         logger.info("start training model...")
         searcher.train()
+    elif option.mode == 'eval':
+        num = input('Please input the epoch of the model to be loaded: ')
+        searcher.load_model(searcher.model, num)
+        print('load model successfully.')
+        test_data = CodeSearchDataset(os.path.join(conf['data']['wkdir'], conf['data']['test_db_path']))
+        searcher.eval(test_data)
 
 
 if __name__ == '__main__':

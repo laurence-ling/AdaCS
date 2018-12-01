@@ -16,6 +16,13 @@ class CodeSearcher:
         self.conf = conf
         self.wkdir = self.conf['data']['wkdir']
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        train_data = CodeSearchDataset(os.path.join(conf['data']['wkdir'], conf['data']['train_db_path']))
+        self.model = HybridModule(
+            int(conf['data']['query_max_len']), train_data.core_term_size,
+            int(conf['model']['core_term_embedding_size']),
+            int(conf['model']['lstm_hidden_size']),
+            int(conf['model']['lstm_layers']),
+            float(self.conf['train']['margin'])).to(self.device)
 
     def save_model(self, model, epoch):
         model_dir = os.path.join(self.wkdir, 'models')
@@ -33,11 +40,6 @@ class CodeSearcher:
         train_size = len(train_data)
         if torch.cuda.device_count() > 1:
             print("let's use ", torch.cuda.device_count(), "GPUs")
-        self.model = HybridModule(
-            train_data.query_max_size, train_data.core_term_size,
-            int(self.conf['model']['core_term_embedding_size']), int(self.conf['model']['lstm_hidden_size']),
-            int(self.conf['model']['lstm_layers']),
-            float(self.conf['train']['margin'])).to(self.device)
 
         save_round = int(self.conf['train']['save_round'])
         nb_epoch = int(self.conf['train']['nb_epoch'])
