@@ -49,7 +49,7 @@ def main():
         searcher.train()
     elif option.mode == 'eval':
         num = input('Please input the epoch of the model to be loaded: ')
-        searcher.load_model(searcher.model, num)
+        searcher.load_model(searcher.model, int(num))
         print('load model successfully.')
         test_data = CodeSearchDataset(os.path.join(conf['data']['wkdir'], conf['data']['test_db_path']))
         searcher.eval(test_data)
