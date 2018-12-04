@@ -21,7 +21,7 @@ class WordSim:
     def sim(self, word_1, word_2):
         vec_1 = self.word_embeddings[word_1]
         vec_2 = self.word_embeddings[word_2]
-        return spatial.distance.cosine(vec_1, vec_2)
+        return 1.0 - spatial.distance.cosine(vec_1, vec_2)
 
 
 class WordEmbeddings:

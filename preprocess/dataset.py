@@ -30,12 +30,12 @@ class CodeSearchDataset(Dataset):
             if print_log and i % 100 == 0:
                 print(i, '/', len(data))
             item = data[i]
-            pos_data = MatchingMatrix(item[0], item[1], word_sim, query_max_size)
+            pos_data = MatchingMatrix(item[0], item[1], item[2], word_sim, query_max_size)
             neg_idx_list = doc_sim.negative_sampling(i, top_k, sampling_size)
-            neg_data_list = [MatchingMatrix(item[0], data[idx][1], word_sim, query_max_size) for idx in neg_idx_list]
+            neg_data_list = [MatchingMatrix(item[0], data[idx][1], data[idx][2], word_sim, query_max_size) for idx in neg_idx_list]
             pkl = pickle.dumps(CodeSearchDataSample(item[2], pos_data, neg_data_list))
             samples_buffer.append([i, pkl])
-            if i > 0 and (i % 1000 == 0 or i + 1 == range(len(data))):
+            if i > 0 and (i % 1000 == 0 or i + 1 == len(data)):
                 cursor.executemany('''INSERT INTO samples VALUES (?,?)''', samples_buffer)
                 conn.commit()
                 samples_buffer.clear()
@@ -46,7 +46,6 @@ class CodeSearchDataset(Dataset):
         self.cursor = self.conn.cursor()
         self.cursor.execute('''SELECT query_max_size, code_max_size, core_term_size FROM conf''')
         self.query_max_size, self.code_max_size, self.core_term_size = self.cursor.fetchone()
-        self.cursor.execute('''SELECT pkl FROM samples WHERE id = 0''')
         self.cursor.execute('''SELECT count(*) FROM samples''')
         self.len = self.cursor.fetchone()[0]
 
@@ -70,7 +69,13 @@ class CodeSearchDataset(Dataset):
         pos_lengths = numpy.asarray([len(pos.core_terms) for pos in pos_samples])
         neg_core_terms = numpy.asarray([self.pad_terms(neg.core_terms) for neg in neg_samples])
         pos_core_terms = numpy.asarray([self.pad_terms(pos.core_terms) for pos in pos_samples])
-        return query_id, pos_matrix, pos_core_terms, pos_lengths, neg_matrix, neg_core_terms, neg_lengths
+        neg_ids = numpy.asarray([int(neg.code_id) for neg in neg_samples])
+        return query_id, pos_matrix, pos_core_terms, pos_lengths, neg_matrix, neg_core_terms, neg_lengths, neg_ids
+
+    def get_sample(self, idx):
+        self.cursor.execute('''SELECT pkl FROM samples where id = ?''', [idx])
+        sample = pickle.loads(self.cursor.fetchone()[0])
+        return sample
 
     def pad_matrix(self, matrix):
         padded = numpy.zeros([self.code_max_size, self.query_max_size])
@@ -97,7 +102,8 @@ class CodeSearchDataSample:
 
 class MatchingMatrix:
 
-    def __init__(self, document_1, document_2, word_sim, query_max_size):
+    def __init__(self, document_1, document_2, code_id, word_sim, query_max_size):
+        self.code_id = code_id
         self.matrix = self.__matrix(document_1, document_2, word_sim, query_max_size)
         self.core_terms = self.__core_terms(document_2, word_sim)
 

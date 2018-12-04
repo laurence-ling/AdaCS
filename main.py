@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 def parse_args():
     parser = argparse.ArgumentParser("train and test code search model")
     parser.add_argument("-p", "--prepare", action="store_true", default=False, help="Prepare dataset first.")
-    parser.add_argument("--mode", choices=["train", "eval"], default="train",
+    parser.add_argument("--mode", choices=["train", "eval", "debug"], default="train",
                         help="The mode to run. The `train` mode trains a model;"
                         "the `eval` mode evaluates the model.")
     parser.add_argument("-v", "--verbose", default=True, help="Print verbose info.")
@@ -52,8 +52,22 @@ def main():
         searcher.load_model(searcher.model, int(num))
         print('load model successfully.')
         test_data = CodeSearchDataset(os.path.join(conf['data']['wkdir'], conf['data']['test_db_path']))
-        searcher.eval(test_data)
-
+        searcher.eval(test_data, print_details=True)
+    elif option.mode == 'debug':
+        line = input('Please input two item ids, seperated by space: ')
+        eles = line.strip().split()
+        test_data = CodeSearchDataset(os.path.join(conf['data']['wkdir'], conf['data']['test_db_path']))
+        for k in range(len(test_data)):
+            sample = test_data.get_sample(k)
+            if sample.id == eles[0]:
+                for data in sample.neg_data_list + [sample.pos_data]:
+                    if data.code_id == eles[1]:
+                        for i in range(len(data.matrix)):
+                            for j in range(len(data.matrix[0])):
+                                print('%5.2f' % data.matrix[i][j], end=', ')
+                            print()
+                        break
+                break
 
 if __name__ == '__main__':
     main()
