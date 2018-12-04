@@ -37,6 +37,7 @@ class CodeSearcher:
     def train(self):
         train_data = CodeSearchDataset(os.path.join(self.wkdir, self.conf['data']['train_db_path']))
         valid_data = CodeSearchDataset(os.path.join(self.wkdir, self.conf['data']['valid_db_path']))
+        test_data = CodeSearchDataset(os.path.join(self.wkdir, self.conf['data']['test_db_path']))
         train_size = len(train_data)
         if torch.cuda.device_count() > 1:
             print("let's use ", torch.cuda.device_count(), "GPUs")
@@ -62,7 +63,10 @@ class CodeSearcher:
             if epoch % save_round == 0:
                 self.save_model(self.model, epoch)
             self.model.eval()
+            print('Validation...')
             self.eval(valid_data)
+            print('Test...')
+            self.eval(test_data)
             self.model.train()
 
     def eval(self, test_data, print_details=False):

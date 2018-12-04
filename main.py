@@ -38,12 +38,9 @@ def main():
     searcher = CodeSearcher(conf)
     if option.prepare:
         logger.info("preparing dataset...")
-        prepare(conf, conf['data']['train_code_path'], conf['data']['train_nl_path'],
-                conf['data']['train_db_path'], train_mode=True)
-        prepare(conf, conf['data']['valid_code_path'], conf['data']['valid_nl_path'],
-                conf['data']['valid_db_path'], train_mode=False)
-        prepare(conf, conf['data']['test_code_path'], conf['data']['test_nl_path'],
-                conf['data']['test_db_path'], train_mode=False)
+        # prepare(conf, conf['data']['train_code_path'], conf['data']['train_nl_path'], conf['data']['train_db_path'], train_mode=True)
+        prepare(conf, conf['data']['valid_code_path'], conf['data']['valid_nl_path'], conf['data']['valid_db_path'], train_mode=False)
+        prepare(conf, conf['data']['test_code_path'], conf['data']['test_nl_path'], conf['data']['test_db_path'], train_mode=False)
     elif option.mode == 'train':
         logger.info("start training model...")
         searcher.train()
