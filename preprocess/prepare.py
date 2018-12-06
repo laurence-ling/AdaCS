@@ -5,12 +5,24 @@ from preprocess.dataset import CodeSearchDataset
 
 
 def prepare(conf, code_path, nl_path, output_db_path, train_mode=True):
+
+    train_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/fasttext-corpus-train.txt'))
+
     core_term_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../conf/core_terms.txt'))
-    fasttext_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/fasttext-corpus.txt'))
+    if train_mode:
+        fasttext_corpus_path = train_corpus_path
+    else:
+        fasttext_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/fasttext-corpus-current.txt'))
 
     data = Tokenizer().parse(nl_path, code_path)
 
+    train_corpus_content = []
+    if not train_mode:
+        with open(train_corpus_path, 'r') as f:
+            train_corpus_content = f.readlines()
     with open(fasttext_corpus_path, 'w') as f:
+        f.writelines(train_corpus_content)
+        f.write('\n')
         for item in data:
             f.write(' '.join(item[0]) + '\n')
             f.write(' '.join(item[1]) + '\n')
