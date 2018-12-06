@@ -101,7 +101,7 @@ class CodeSearchDataset(Dataset):
                 if scores[j] >= scores[i]:
                     list.append((int(data[j][2]), float(scores[j])))
             sum += 1.0 / len(list)
-            print('#%d:' % int(data[i][2]), 'rank=%d' % len(list), [x[0] for x in sorted(list, key=lambda x: -x[1])][:3], 'MRR=%f' % round(sum/(i+1), 2))
+            print('#%d:' % int(data[i][2]), 'rank=%d' % len(list), [x[0] for x in sorted(list, key=lambda x: -x[1])][:3], 'MRR=%.2f' % sum/(i+1))
 
     def get_sample(self, idx):
         self.cursor.execute('''SELECT pkl FROM samples WHERE id = ?''', [idx])
