@@ -9,6 +9,8 @@ from tqdm import tqdm
 
 from learning.model import HybridModule
 from preprocess.dataset import CodeSearchDataset
+from preprocess.lex.token import Tokenizer
+from preprocess.lex.word_sim import WordSim
 
 
 class CodeSearcher:
@@ -24,15 +26,16 @@ class CodeSearcher:
             int(conf['model']['lstm_layers']),
             float(self.conf['train']['margin'])).to(self.device)
 
-    def save_model(self, model, epoch):
+    def save_model(self, epoch):
         model_dir = os.path.join(self.wkdir, 'models')
         if not os.path.exists(model_dir):
             os.mkdir(model_dir)
-        torch.save(model.state_dict(), os.path.join(model_dir, 'epoch%d.h5' % epoch))
+        torch.save(self.model.state_dict(), os.path.join(model_dir, 'epoch%d.h5' % epoch))
 
-    def load_model(self, model, epoch):
-        assert os.path.exists(self.wkdir+'models/epoch%d.h5'%epoch), 'Weights not found.'
-        model.load_state_dict(torch.load(self.wkdir+'models/epoch%d.h5'%epoch))
+    def load_model(self, epoch):
+        model_path = os.path.join(self.wkdir, 'models/epoch%d.h5' % epoch)
+        assert os.path.exists(model_path), 'Weights not found.'
+        self.model.load_state_dict(torch.load(model_path))
 
     def train(self):
         train_data = CodeSearchDataset(os.path.join(self.wkdir, self.conf['data']['train_db_path']))
@@ -61,15 +64,22 @@ class CodeSearcher:
                 epoch_loss += loss.item()
             print('epoch', epoch, ': Loss =', epoch_loss / (train_size/batch_size))
             if epoch % save_round == 0:
-                self.save_model(self.model, epoch)
-            self.model.eval()
+                self.save_model(epoch)
             print('Validation...')
             self.eval(valid_data)
             print('Test...')
             self.eval(test_data)
             self.model.train()
 
-    def eval(self, test_data, print_details=False):
+    def eval2(self):
+        data = Tokenizer().parse(os.path.join(self.wkdir, self.conf['data']['test_nl_path']), os.path.join(self.wkdir, self.conf['data']['test_code_path']))
+        fasttext_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/fasttext-corpus-current.txt'))
+        core_term_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../conf/core_terms.txt'))
+        word_sim = WordSim(core_term_path, fasttext_corpus_path, False)
+        CodeSearchDataset.eval(self.model, data, word_sim, int(self.conf['data']['query_max_len']), int(self.conf['data']['code_max_len']), self.device)
+
+    def eval(self, test_data):
+        self.model.eval()
         batch_size = int(self.conf['train']['batch_size'])
         dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
         
@@ -94,22 +104,7 @@ class CodeSearcher:
                         break
             return ranks
 
-        def id_with_score(pos_score, neg_score, pos_id, neg_ids):
-            ret = []
-            for i, pos_ in enumerate(pos_score):
-                list = [(pos_id[i], pos_)]
-                for j, neg_ in enumerate(neg_score[i]):
-                    list.append((neg_ids[i][j], neg_))
-                rank = 0
-                for item in list:
-                    if item[1] >= pos_:
-                        rank += 1
-                list = sorted(list, key=lambda x: -x[1])[:10]
-                ret.append((pos_id[i], list, rank, pos_))
-            return ret
-
         top_k = 5
-        ids_with_score = []
         accs = [[] for _ in range(top_k)]
         mrrs = []
         for q_id, pos_matrix, pos_core_terms, pos_length, neg_matrix, neg_core_terms, neg_length, neg_ids in dataloader:
@@ -121,17 +116,9 @@ class CodeSearcher:
             for i in range(top_k):
                 accs[i].append(top_k_acc(pos_score, neg_score, i+1))
             mrrs.append(mrr(pos_score, neg_score))
-            if print_details:
-                ids_with_score.extend(id_with_score(pos_score, neg_score, q_id, neg_ids))
         for i in range(top_k):
             print('Hit@{}: {}'.format(i+1, np.mean(accs[i])))
         print('MRR: {}'.format(np.mean(mrrs)))
-
-        if print_details:
-            ids_with_score = sorted(ids_with_score, key=lambda x: -x[2])[:50]
-            for item in ids_with_score:
-                print(item[0] + '(' + str(round(float(item[3]), 2)) + '): '
-                      + ','.join([str(int(x[0])) + "(" + str(round(float(x[1]), 2)) + ")" for x in item[1]]))
 
     def gVar(self, tensor):
         return tensor.to(self.device)

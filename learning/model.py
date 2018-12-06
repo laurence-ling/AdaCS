@@ -21,7 +21,6 @@ class HybridModule(nn.Module):
         self.fc = nn.Linear(lstm_hidden_size * 2, 1)
 
     def encode(self, matrix, length, core_terms):
-
         length = torch.cat(length)  # [batch_size * sample_size]
         _, idx_sort = torch.sort(length, dim=0, descending=True)
         _, idx_unsort = torch.sort(idx_sort, dim=0)

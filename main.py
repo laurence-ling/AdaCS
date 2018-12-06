@@ -6,8 +6,10 @@ import configparser
 import logging
 
 from learning.codesearcher import CodeSearcher
+from preprocess.lex.token import Tokenizer
+from preprocess.lex.word_sim import WordSim
 from preprocess.prepare import prepare
-from preprocess.dataset import CodeSearchDataset
+from preprocess.dataset import CodeSearchDataset, MatchingMatrix
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -28,7 +30,6 @@ def get_config():
     config = configparser.ConfigParser()
     config.read(os.path.join(basedir, './conf/config.ini'))
     config.set('data', 'wkdir', basedir)
-    print(config.options('data'))
     return config
 
 
@@ -46,21 +47,24 @@ def main():
         searcher.train()
     elif option.mode == 'eval':
         num = input('Please input the epoch of the model to be loaded: ')
-        searcher.load_model(searcher.model, int(num))
+        searcher.load_model(int(num))
         print('load model successfully.')
-        test_data = CodeSearchDataset(os.path.join(conf['data']['wkdir'], conf['data']['test_db_path']))
-        searcher.eval(test_data, print_details=True)
+        searcher.eval2()
     elif option.mode == 'debug':
         line = input('Please input two item ids, seperated by space: ')
         eles = line.strip().split()
-        test_data = CodeSearchDataset(os.path.join(conf['data']['wkdir'], conf['data']['test_db_path']))
-        for k in range(len(test_data)):
-            sample = test_data.get_sample(k)
-            if sample.id == eles[0]:
-                for data in sample.neg_data_list + [sample.pos_data]:
-                    if data.code_id == eles[1]:
-                        for i in range(len(data.matrix)):
-                            for j in range(len(data.matrix[0])):
+        data = Tokenizer().parse(os.path.join(conf['data']['wkdir'], conf['data']['test_nl_path']),
+                                 os.path.join(conf['data']['wkdir'], conf['data']['test_code_path']))
+        fasttext_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/fasttext-corpus-current.txt'))
+        core_term_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../conf/core_terms.txt'))
+        word_sim = WordSim(core_term_path, fasttext_corpus_path, False)
+        for a in range(len(data)):
+            if data[a][2] == eles[0]:
+                for b in range(len(data)):
+                    if data[b][2] == eles[1]:
+                        matrix = MatchingMatrix(data[a][0], data[b][1], data[a][2], word_sim, conf['data']['query_max_len'])
+                        for i in range(len(matrix)):
+                            for j in range(len(matrix[0])):
                                 print('%5.2f' % data.matrix[i][j], end=', ')
                             print()
                         break

@@ -22,6 +22,7 @@ def prepare(conf, code_path, nl_path, output_db_path, train_mode=True):
             train_corpus_content = f.readlines()
     with open(fasttext_corpus_path, 'w') as f:
         f.writelines(train_corpus_content)
+        f.write('\n')
         for item in data:
             f.write(' '.join(item[0]) + '\n')
             f.write(' '.join(item[1]) + '\n')
