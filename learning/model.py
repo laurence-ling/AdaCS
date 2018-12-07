@@ -12,7 +12,7 @@ class HybridModule(nn.Module):
         self.core_term_embedding = nn.Embedding(core_term_size, core_term_embedding_size)
         self.margin = margin
         self.rnn = nn.LSTM(
-            input_size=query_max_size + core_term_embedding_size,
+            input_size=query_max_size * 2 + core_term_embedding_size,
             hidden_size=lstm_hidden_size,
             num_layers=lstm_num_layers,
             batch_first=True,

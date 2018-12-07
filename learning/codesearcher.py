@@ -120,14 +120,6 @@ class CodeSearcher:
             print('Hit@{}: {}'.format(i+1, np.mean(accs[i])))
         print('MRR: {}'.format(np.mean(mrrs)))
 
-        bad_cases = sorted(qid_mrr.items(), key=lambda x: x[1])
-        with open('bad_case.txt', 'w') as f:
-            for i, mrr in bad_cases:
-                f.write('{} {}\n'.format(i, mrr))
-        bad_cases = bad_cases[:100]
-        print(bad_cases)
-
-
     def gVar(self, tensor):
         return tensor.to(self.device)
 

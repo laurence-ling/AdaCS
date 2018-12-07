@@ -101,7 +101,7 @@ class CodeSearchDataset(Dataset):
                 if scores[j] >= scores[i]:
                     list.append((int(data[j][2]), float(scores[j])))
             sum += 1.0 / len(list)
-            print('#%d:' % int(data[i][2]), 'rank=%d' % len(list), [x[0] for x in sorted(list, key=lambda x: -x[1])][:3], 'MRR=%.2f' % sum/(i+1))
+            print('#%d:' % int(data[i][2]), 'rank=%d' % len(list), [x[0] for x in sorted(list, key=lambda x: -x[1])][:3], 'MRR=%.2f' % (sum/(i+1)))
 
     def get_sample(self, idx):
         self.cursor.execute('''SELECT pkl FROM samples WHERE id = ?''', [idx])
@@ -110,7 +110,7 @@ class CodeSearchDataset(Dataset):
 
     @staticmethod
     def pad_matrix(matrix, code_max_size, query_max_size):
-        padded = numpy.zeros([code_max_size, query_max_size])
+        padded = numpy.zeros([code_max_size, query_max_size * 2])
         slen = len(matrix)
         assert slen <= code_max_size
         padded[:slen, :] = matrix
@@ -142,10 +142,11 @@ class MatchingMatrix:
 
     @staticmethod
     def __matrix(document_1, document_2, word_sim, query_max_size):
-        ret = numpy.zeros([query_max_size, len(document_2)])
+        ret = numpy.zeros([query_max_size * 2, len(document_2)])
         for i in range(len(document_1)):
             for j in range(len(document_2)):
-                ret[i][j] = word_sim.sim(document_1[i], document_2[j])
+                ret[i*2][j] = word_sim.sim(document_1[i], document_2[j])
+                ret[i*2+1][j] = word_sim.idf(document_1[i])
         return ret
 
     @staticmethod
