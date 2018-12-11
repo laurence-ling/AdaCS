@@ -18,9 +18,9 @@ class RnnModel(nn.Module):
             hidden_size=lstm_hidden_size,
             num_layers=lstm_num_layers,
             batch_first=True,
-            bidirectional=True,
+            bidirectional=False,
             dropout=0.05)
-        self.fc = nn.Linear(lstm_hidden_size * 2, 1)
+        self.fc = nn.Linear(lstm_hidden_size, 1)
         print('RNN model, count(parameters)=%d' % (sum([numpy.prod(list(p.size())) for p in self.parameters()])))
 
     def encode(self, matrix, length, core_terms):
@@ -29,6 +29,7 @@ class RnnModel(nn.Module):
         # [batch_size * sample_size][time_steps][lstm_hidden_size * 2]
         x, _ = self.rnn(x)
         x, _ = torch.nn.utils.rnn.pad_packed_sequence(x, batch_first=True)
+        # print(x)
         index = length.view(-1, 1, 1)
         index = index.expand(x.shape[0], 1, x.shape[2]) - 1
         x = torch.gather(x, 1, index).squeeze()

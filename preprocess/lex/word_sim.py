@@ -12,7 +12,8 @@ class WordSim:
     def __init__(self, core_term_path, pretrain=True, update=True, fasttext_corpus_path=None):
         p = PorterStemmer()
         with open(core_term_path, 'r') as f:
-            self.core_terms = set([p.stem(word.strip()) for word in f.readlines() if len(word.strip()) > 0])
+            self.core_terms = list(set([p.stem(word.strip()) for word in f.readlines() if len(word.strip()) > 0]))
+            self.core_terms.sort()
         self.word_embeddings = WordEmbeddings(pretrain, update, fasttext_corpus_path)
         self.core_term_dict = {}
         index = 2
@@ -25,7 +26,7 @@ class WordSim:
         dictionary = corpora.Dictionary(documents)
         corpus = [dictionary.doc2bow(doc) for doc in documents]
         tfidf_model = models.TfidfModel(corpus)
-        self.idfs = tfidf_model.idfs
+        self.idfs = {dictionary[kv[0]]: kv[1] for kv in tfidf_model.idfs.items()}
 
     def idf(self, word):
         if word in self.idfs.keys():

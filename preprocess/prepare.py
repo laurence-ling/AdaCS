@@ -1,18 +1,19 @@
 import os
+
+import re
+
 from preprocess.lex.token import Tokenizer
 from preprocess.lex.word_sim import WordSim
 from preprocess.dataset import CodeSearchDataset
 
 
-def prepare(conf, code_path, nl_path, output_db_path, train_mode=True):
+def prepare(conf, code_path, nl_path, output_db_path, train_mode=True, train_db_path=None):
 
-    train_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/fasttext-corpus-train.txt'))
+    if not train_mode:
+        train_corpus_path = os.path.join(conf['data']['wkdir'], re.sub(r'\.db$', '.txt', train_db_path))
 
-    core_term_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../conf/core_terms.txt'))
-    if train_mode:
-        fasttext_corpus_path = train_corpus_path
-    else:
-        fasttext_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/fasttext-corpus-current.txt'))
+    core_term_path = os.path.join(conf['data']['wkdir'], 'conf/core_terms.txt')
+    fasttext_corpus_path = os.path.join(conf['data']['wkdir'], re.sub(r'\.db$', '.txt', output_db_path))
 
     data = Tokenizer().parse(nl_path, code_path)
 

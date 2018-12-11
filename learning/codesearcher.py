@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import os
 import numpy as np
+import re
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -71,8 +72,8 @@ class CodeSearcher:
 
     def eval2(self):
         data = Tokenizer().parse(os.path.join(self.wkdir, self.conf['data']['test_nl_path']), os.path.join(self.wkdir, self.conf['data']['test_code_path']))
-        fasttext_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/fasttext-corpus-current.txt'))
-        core_term_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../conf/core_terms.txt'))
+        fasttext_corpus_path = os.path.join(self.wkdir, re.sub(r'\.db$', '.txt', self.conf['data']['test_db_path']))
+        core_term_path = os.path.join(self.wkdir, 'conf/core_terms.txt')
         word_sim = WordSim(core_term_path, pretrain=False, update=False, fasttext_corpus_path=fasttext_corpus_path)
         CodeSearchDataset.eval(self.model, data, word_sim, int(self.conf['data']['query_max_len']), int(self.conf['data']['code_max_len']), self.device)
 

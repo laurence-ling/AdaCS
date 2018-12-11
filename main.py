@@ -5,6 +5,10 @@ import argparse
 import configparser
 import logging
 
+import re
+
+import torch
+
 from learning.codesearcher import CodeSearcher
 from preprocess.lex.token import Tokenizer
 from preprocess.lex.word_sim import WordSim
@@ -39,8 +43,8 @@ def main():
     if option.prepare:
         logger.info("preparing dataset...")
         prepare(conf, conf['data']['train_code_path'], conf['data']['train_nl_path'], conf['data']['train_db_path'], train_mode=True)
-        prepare(conf, conf['data']['valid_code_path'], conf['data']['valid_nl_path'], conf['data']['valid_db_path'], train_mode=False)
-        prepare(conf, conf['data']['test_code_path'], conf['data']['test_nl_path'], conf['data']['test_db_path'], train_mode=False)
+        prepare(conf, conf['data']['valid_code_path'], conf['data']['valid_nl_path'], conf['data']['valid_db_path'], train_mode=False, train_db_path=conf['data']['train_db_path'])
+        prepare(conf, conf['data']['test_code_path'], conf['data']['test_nl_path'], conf['data']['test_db_path'], train_mode=False, train_db_path=conf['data']['train_db_path'])
     elif option.mode == 'train':
         logger.info("start training model...")
         searcher = CodeSearcher(conf)
@@ -56,8 +60,8 @@ def main():
         eles = line.strip().split()
         data = Tokenizer().parse(os.path.join(conf['data']['wkdir'], conf['data']['test_nl_path']),
                                  os.path.join(conf['data']['wkdir'], conf['data']['test_code_path']))
-        fasttext_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'tmp/fasttext-corpus-current.txt'))
-        core_term_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'conf/core_terms.txt'))
+        fasttext_corpus_path = os.path.join(conf['data']['wkdir'], re.sub(r'\.db$', '.txt', conf['data']['test_db_path']))
+        core_term_path = os.path.join(conf['data']['wkdir'], 'conf/core_terms.txt')
         word_sim = WordSim(core_term_path, pretrain=True, fasttext_corpus_path=fasttext_corpus_path)
         for a in range(len(data)):
             if data[a][2] == eles[0]:
