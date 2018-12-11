@@ -36,7 +36,6 @@ def get_config():
 def main():
     conf = get_config()
     option = parse_args()
-    searcher = CodeSearcher(conf)
     if option.prepare:
         logger.info("preparing dataset...")
         prepare(conf, conf['data']['train_code_path'], conf['data']['train_nl_path'], conf['data']['train_db_path'], train_mode=True)
@@ -44,9 +43,11 @@ def main():
         prepare(conf, conf['data']['test_code_path'], conf['data']['test_nl_path'], conf['data']['test_db_path'], train_mode=False)
     elif option.mode == 'train':
         logger.info("start training model...")
+        searcher = CodeSearcher(conf)
         searcher.train()
     elif option.mode == 'eval':
         num = input('Please input the epoch of the model to be loaded: ')
+        searcher = CodeSearcher(conf)
         searcher.load_model(int(num))
         print('load model successfully.')
         searcher.eval2()
@@ -55,9 +56,9 @@ def main():
         eles = line.strip().split()
         data = Tokenizer().parse(os.path.join(conf['data']['wkdir'], conf['data']['test_nl_path']),
                                  os.path.join(conf['data']['wkdir'], conf['data']['test_code_path']))
-        fasttext_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/fasttext-corpus-current.txt'))
-        core_term_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../conf/core_terms.txt'))
-        word_sim = WordSim(core_term_path, fasttext_corpus_path, False)
+        fasttext_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'tmp/fasttext-corpus-current.txt'))
+        core_term_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'conf/core_terms.txt'))
+        word_sim = WordSim(core_term_path, pretrain=True, fasttext_corpus_path=fasttext_corpus_path)
         for a in range(len(data)):
             if data[a][2] == eles[0]:
                 for b in range(len(data)):

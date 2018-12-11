@@ -3,15 +3,17 @@ import fastText
 import re, os
 
 from gensim import corpora, models
+from gensim.parsing import PorterStemmer
 from scipy import spatial
 
 
 class WordSim:
 
-    def __init__(self, core_term_path, fasttext_corpus_path, update=True):
+    def __init__(self, core_term_path, pretrain=True, update=True, fasttext_corpus_path=None):
+        p = PorterStemmer()
         with open(core_term_path, 'r') as f:
-            self.core_terms = set([word.strip() for word in f.readlines() if len(word.strip()) > 0])
-        self.word_embeddings = WordEmbeddings(fasttext_corpus_path, update)
+            self.core_terms = set([p.stem(word.strip()) for word in f.readlines() if len(word.strip()) > 0])
+        self.word_embeddings = WordEmbeddings(pretrain, update, fasttext_corpus_path)
         self.core_term_dict = {}
         index = 2
         for core_term in self.core_terms:
@@ -40,7 +42,10 @@ class WordSim:
 
 class WordEmbeddings:
 
-    def __init__(self, fasttext_corpus_path, update=True):
+    def __init__(self, pretrain=True, update=True, fasttext_corpus_path=None):
+        if pretrain:
+            self.model = fastText.load_model('resource/cc.en.300.bin')
+            return
         model_path = re.sub(r'\.txt$', '.model', fasttext_corpus_path)
         if update or not os.path.exists(model_path):
             self.model = fastText.train_unsupervised(input=fasttext_corpus_path, model='skipgram')

@@ -83,7 +83,8 @@ class CodeSearchDataset(Dataset):
     def eval(model, data, word_sim, query_max_size, code_max_size, device):
         model.eval()
         data = [item for item in data if len(item[0]) <= query_max_size and len(item[1]) <= code_max_size]
-        sum = 0
+        mrr = 0
+        hit = [0, 0, 0, 0, 0]
         for i in range(len(data)):
             items = []
             for j in range(len(data)):
@@ -96,13 +97,18 @@ class CodeSearchDataset(Dataset):
                 [[CodeSearchDataset.pad_terms(item.core_terms, code_max_size)] for item in items])
             scores = model.encode(torch.from_numpy(matrices).to(device), lengths,
                                   torch.from_numpy(core_terms).to(device)).data.cpu().numpy()
-            list = []
+            l = []
             for j in range(len(data)):
                 if scores[j] >= scores[i]:
-                    list.append((int(data[j][2]), float(scores[j])))
-            sum += 1.0 / len(list)
-            print('#%d:' % int(data[i][2]), 'rank=%d' % len(list), 'MRR=%.4f' % (sum / (i + 1)))
-            # print('#%d:' % int(data[i][2]), 'rank=%d' % len(list), [x[0] for x in sorted(list, key=lambda x: -x[1])][:3], 'MRR=%.2f' % (sum/(i+1)))
+                    l.append((int(data[j][2]), float(scores[j])))
+            mrr += 1.0 / len(l)
+            for k in range(len(hit)):
+                if len(l) <= k + 1:
+                    hit[k] += 1
+            print(
+                '#%d:' % int(data[i][2]), 'rank=%d' % len(l), 'MRR=%.4f' % (mrr / (i + 1)),
+                ', '.join([('Hit@%d=%.4f' % (k + 1, (h / (i + 1)))) for k, h in enumerate(hit)])
+                  )
 
     def get_sample(self, idx):
         self.cursor.execute('''SELECT pkl FROM samples WHERE id = ?''', [idx])
@@ -146,8 +152,8 @@ class MatchingMatrix:
         ret = numpy.zeros([query_max_size * 2, len(document_2)])
         for i in range(len(document_1)):
             for j in range(len(document_2)):
-                ret[i*2][j] = word_sim.sim(document_1[i], document_2[j])
-                ret[i*2+1][j] = word_sim.idf(document_1[i])
+                ret[i * 2][j] = word_sim.sim(document_1[i], document_2[j])
+                ret[i * 2 + 1][j] = word_sim.idf(document_1[i])
         return ret
 
     @staticmethod

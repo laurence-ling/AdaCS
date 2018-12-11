@@ -7,7 +7,8 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from learning.model import HybridModule
+from learning.model.rnn import RnnModel
+from learning.model.transformer import TransformerModel
 from preprocess.dataset import CodeSearchDataset
 from preprocess.lex.token import Tokenizer
 from preprocess.lex.word_sim import WordSim
@@ -19,12 +20,9 @@ class CodeSearcher:
         self.wkdir = self.conf['data']['wkdir']
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         train_data = CodeSearchDataset(os.path.join(conf['data']['wkdir'], conf['data']['train_db_path']))
-        self.model = HybridModule(
-            int(conf['data']['query_max_len']), train_data.core_term_size,
-            int(conf['model']['core_term_embedding_size']),
-            int(conf['model']['lstm_hidden_size']),
-            int(conf['model']['lstm_layers']),
-            float(self.conf['train']['margin'])).to(self.device)
+        self.model = RnnModel(int(conf['data']['query_max_len']), train_data.core_term_size, int(conf['model']['core_term_embedding_size']), int(conf['model']['lstm_hidden_size']), int(conf['model']['lstm_layers']), float(self.conf['train']['margin'])).to(self.device)
+        # Transformer model, but still CUDA out of memory error
+        # self.model = TransformerModel(train_data.core_term_size, int(conf['data']['code_max_len']), int(conf['data']['query_max_len']), int(conf['model']['core_term_embedding_size'])).to(self.device)
 
     def save_model(self, epoch):
         model_dir = os.path.join(self.wkdir, 'models')
@@ -75,7 +73,7 @@ class CodeSearcher:
         data = Tokenizer().parse(os.path.join(self.wkdir, self.conf['data']['test_nl_path']), os.path.join(self.wkdir, self.conf['data']['test_code_path']))
         fasttext_corpus_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tmp/fasttext-corpus-current.txt'))
         core_term_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../conf/core_terms.txt'))
-        word_sim = WordSim(core_term_path, fasttext_corpus_path, False)
+        word_sim = WordSim(core_term_path, pretrain=False, update=False, fasttext_corpus_path=fasttext_corpus_path)
         CodeSearchDataset.eval(self.model, data, word_sim, int(self.conf['data']['query_max_len']), int(self.conf['data']['code_max_len']), self.device)
 
     def eval(self, test_data):
