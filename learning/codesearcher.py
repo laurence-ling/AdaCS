@@ -74,7 +74,7 @@ class CodeSearcher:
         data = Tokenizer().parse(os.path.join(self.wkdir, self.conf['data']['test_nl_path']), os.path.join(self.wkdir, self.conf['data']['test_code_path']))
         fasttext_corpus_path = os.path.join(self.wkdir, re.sub(r'\.db$', '.txt', self.conf['data']['test_db_path']))
         core_term_path = os.path.join(self.wkdir, 'conf/core_terms.txt')
-        word_sim = WordSim(core_term_path, pretrain=False, update=False, fasttext_corpus_path=fasttext_corpus_path)
+        word_sim = WordSim(core_term_path, pretrain=(self.conf['model']['pretrained_wordvec'] == str(True)), update=False, fasttext_corpus_path=fasttext_corpus_path)
         CodeSearchDataset.eval(self.model, data, word_sim, int(self.conf['data']['query_max_len']), int(self.conf['data']['code_max_len']), self.device)
 
     def eval(self, test_data):

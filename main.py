@@ -62,7 +62,7 @@ def main():
                                  os.path.join(conf['data']['wkdir'], conf['data']['test_code_path']))
         fasttext_corpus_path = os.path.join(conf['data']['wkdir'], re.sub(r'\.db$', '.txt', conf['data']['test_db_path']))
         core_term_path = os.path.join(conf['data']['wkdir'], 'conf/core_terms.txt')
-        word_sim = WordSim(core_term_path, pretrain=True, fasttext_corpus_path=fasttext_corpus_path)
+        word_sim = WordSim(core_term_path, pretrain=(conf['model']['pretrained_wordvec'] == str(True)), fasttext_corpus_path=fasttext_corpus_path)
         for a in range(len(data)):
             if data[a][2] == eles[0]:
                 for b in range(len(data)):

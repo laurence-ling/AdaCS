@@ -27,7 +27,7 @@ def prepare(conf, code_path, nl_path, output_db_path, train_mode=True, train_db_
         for item in data:
             f.write(' '.join(item[0]) + '\n')
             f.write(' '.join(item[1]) + '\n')
-    word_sim = WordSim(core_term_path, pretrain=False, update=True, fasttext_corpus_path=fasttext_corpus_path)
+    word_sim = WordSim(core_term_path, pretrain=(conf['model']['pretrained_wordvec'] == str(True)), update=True, fasttext_corpus_path=fasttext_corpus_path)
 
     if train_mode:
         CodeSearchDataset.create_dataset(data, word_sim, output_db_path,
