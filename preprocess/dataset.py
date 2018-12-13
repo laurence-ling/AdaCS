@@ -95,7 +95,7 @@ class CodeSearchDataset(Dataset):
             lengths = [torch.LongTensor([len(item.core_terms)]).to(device) for item in items]
             core_terms = numpy.asarray(
                 [[CodeSearchDataset.pad_terms(item.core_terms, code_max_size)] for item in items])
-            scores = model.encode(torch.from_numpy(matrices).to(device), lengths,
+            scores = model(torch.from_numpy(matrices).to(device), lengths,
                                   torch.from_numpy(core_terms).to(device)).data.cpu().numpy()
             l = []
             for j in range(len(data)):

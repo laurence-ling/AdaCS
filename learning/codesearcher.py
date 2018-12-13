@@ -16,14 +16,17 @@ from preprocess.lex.word_sim import WordSim
 
 
 class CodeSearcher:
-    def __init__(self, conf):
+    def __init__(self, conf, transformer=True):
         self.conf = conf
         self.wkdir = self.conf['data']['wkdir']
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         train_data = CodeSearchDataset(os.path.join(conf['data']['wkdir'], conf['data']['train_db_path']))
-        self.model = RnnModel(int(conf['data']['query_max_len']), train_data.core_term_size, int(conf['model']['core_term_embedding_size']), int(conf['model']['lstm_hidden_size']), int(conf['model']['lstm_layers']), float(self.conf['train']['margin'])).to(self.device)
-        # Transformer model, but still CUDA out of memory error
-        # self.model = TransformerModel(train_data.core_term_size, int(conf['data']['code_max_len']), int(conf['data']['query_max_len']), int(conf['model']['core_term_embedding_size'])).to(self.device)
+        if not transformer:
+            self.model = RnnModel(int(conf['data']['query_max_len']), train_data.core_term_size, int(conf['model']['core_term_embedding_size']), int(conf['model']['lstm_hidden_size']), int(conf['model']['lstm_layers']), float(self.conf['train']['margin'])).to(self.device)
+            self.batch_size = int(self.conf['train']['batch_size'])
+        else:
+            self.model = TransformerModel(train_data.core_term_size, int(conf['data']['query_max_len']), int(conf['model']['core_term_embedding_size']), float(self.conf['train']['margin'])).to(self.device)
+            self.batch_size = int(self.conf['train']['transformer_batch_size'])
 
     def save_model(self, epoch):
         model_dir = os.path.join(self.wkdir, 'models')
@@ -46,7 +49,7 @@ class CodeSearcher:
 
         save_round = int(self.conf['train']['save_round'])
         nb_epoch = int(self.conf['train']['nb_epoch'])
-        batch_size = int(self.conf['train']['batch_size'])
+        batch_size = self.batch_size
         dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
         optimizer = optim.Adam(self.model.parameters(), lr=float(self.conf['train']['lr']))
 
@@ -55,7 +58,7 @@ class CodeSearcher:
             for _, pos_matrix, pos_core_terms, pos_length, neg_matrix, neg_core_terms, neg_length, neg_ids in tqdm(dataloader):
                 pos_length = [self.gVar(x) for x in pos_length]
                 neg_length = [self.gVar(x) for x in neg_length]
-                loss = self.model(self.gVar(pos_matrix), self.gVar(pos_core_terms), pos_length,
+                loss = self.model.loss(self.gVar(pos_matrix), self.gVar(pos_core_terms), pos_length,
                                   self.gVar(neg_matrix), self.gVar(neg_core_terms), neg_length)
                 optimizer.zero_grad()
                 loss.backward()
@@ -109,8 +112,8 @@ class CodeSearcher:
         for q_id, pos_matrix, pos_core_terms, pos_length, neg_matrix, neg_core_terms, neg_length, neg_ids in dataloader:
             pos_length = [self.gVar(x) for x in pos_length]
             neg_length = [self.gVar(x) for x in neg_length]
-            pos_score = self.model.encode(self.gVar(pos_matrix), pos_length, self.gVar(pos_core_terms)).data.cpu().numpy()
-            neg_score = self.model.encode(self.gVar(neg_matrix), neg_length, self.gVar(neg_core_terms)).data.cpu().numpy()
+            pos_score = self.model(self.gVar(pos_matrix), pos_length, self.gVar(pos_core_terms)).data.cpu().numpy()
+            neg_score = self.model(self.gVar(neg_matrix), neg_length, self.gVar(neg_core_terms)).data.cpu().numpy()
             neg_score = np.split(neg_score, len(pos_score))
             for i in range(top_k):
                 accs[i].append(top_k_acc(pos_score, neg_score, i+1))

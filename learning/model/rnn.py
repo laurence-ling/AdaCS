@@ -23,7 +23,7 @@ class RnnModel(nn.Module):
         self.fc = nn.Linear(lstm_hidden_size, 1)
         print('RNN model, count(parameters)=%d' % (sum([numpy.prod(list(p.size())) for p in self.parameters()])))
 
-    def encode(self, matrix, length, core_terms):
+    def forward(self, matrix, length, core_terms):
         x, length, idx_unsort = self.code_embedding(matrix, length, core_terms)
         x = torch.nn.utils.rnn.pack_padded_sequence(x, list(length), batch_first=True)
         # [batch_size * sample_size][time_steps][lstm_hidden_size * 2]
@@ -37,7 +37,7 @@ class RnnModel(nn.Module):
         out = self.fc(x).squeeze(1)
         return out
 
-    def forward(self, pos_matrix, pos_core_terms, pos_lengths, neg_matrix, neg_core_terms, neg_lengths):
+    def loss(self, pos_matrix, pos_core_terms, pos_lengths, neg_matrix, neg_core_terms, neg_lengths):
         pos_score = self.encode(pos_matrix, pos_lengths, pos_core_terms)
         neg_score = self.encode(neg_matrix, neg_lengths, neg_core_terms)
         k = int(neg_score.shape[0]/pos_score.shape[0])
