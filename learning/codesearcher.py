@@ -82,7 +82,7 @@ class CodeSearcher:
 
     def eval(self, test_data):
         self.model.eval()
-        batch_size = int(self.conf['train']['batch_size'])
+        batch_size = self.batch_size
         dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
         
         def top_k_acc(pos_score, neg_score, k):
