@@ -16,17 +16,13 @@ from preprocess.lex.word_sim import WordSim
 
 
 class CodeSearcher:
-    def __init__(self, conf, transformer=True):
+    def __init__(self, conf):
         self.conf = conf
         self.wkdir = self.conf['data']['wkdir']
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         train_data = CodeSearchDataset(os.path.join(conf['data']['wkdir'], conf['data']['train_db_path']))
-        if not transformer:
-            self.model = RnnModel(int(conf['data']['query_max_len']), train_data.core_term_size, int(conf['model']['core_term_embedding_size']), int(conf['model']['lstm_hidden_size']), int(conf['model']['lstm_layers']), float(self.conf['train']['margin'])).to(self.device)
-            self.batch_size = int(self.conf['train']['batch_size'])
-        else:
-            self.model = TransformerModel(train_data.core_term_size, int(conf['data']['query_max_len']), int(conf['model']['core_term_embedding_size']), float(self.conf['train']['margin'])).to(self.device)
-            self.batch_size = int(self.conf['train']['transformer_batch_size'])
+        self.model = RnnModel(int(conf['data']['query_max_len']), train_data.core_term_size, int(conf['model']['core_term_embedding_size']), int(conf['model']['lstm_hidden_size']), int(conf['model']['lstm_layers']), float(self.conf['train']['margin'])).to(self.device)
+        self.batch_size = int(self.conf['train']['batch_size'])
 
     def save_model(self, epoch):
         model_dir = os.path.join(self.wkdir, 'models')
@@ -54,6 +50,7 @@ class CodeSearcher:
         optimizer = optim.Adam(self.model.parameters(), lr=float(self.conf['train']['lr']))
 
         for epoch in range(nb_epoch):
+            self.model.train()
             epoch_loss = 0
             for _, pos_matrix, pos_core_terms, pos_length, neg_matrix, neg_core_terms, neg_length, neg_ids in tqdm(dataloader):
                 pos_length = [self.gVar(x) for x in pos_length]
@@ -71,7 +68,6 @@ class CodeSearcher:
             self.eval(valid_data)
             print('Test...')
             self.eval(test_data)
-            self.model.train()
 
     def eval2(self):
         data = Tokenizer().parse(os.path.join(self.wkdir, self.conf['data']['test_nl_path']), os.path.join(self.wkdir, self.conf['data']['test_code_path']))

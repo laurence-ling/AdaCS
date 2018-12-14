@@ -38,8 +38,8 @@ class RnnModel(nn.Module):
         return out
 
     def loss(self, pos_matrix, pos_core_terms, pos_lengths, neg_matrix, neg_core_terms, neg_lengths):
-        pos_score = self.encode(pos_matrix, pos_lengths, pos_core_terms)
-        neg_score = self.encode(neg_matrix, neg_lengths, neg_core_terms)
+        pos_score = self.forward(pos_matrix, pos_lengths, pos_core_terms)
+        neg_score = self.forward(neg_matrix, neg_lengths, neg_core_terms)
         k = int(neg_score.shape[0]/pos_score.shape[0])
         pos_score = pos_score.view(-1, 1).expand(pos_score.shape[0], k).contiguous().view(-1, 1).squeeze()
         loss = (self.margin - pos_score + neg_score).clamp(min=1e-6).mean()
