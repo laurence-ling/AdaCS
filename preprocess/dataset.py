@@ -84,7 +84,7 @@ class CodeSearchDataset(Dataset):
         model.eval()
         data = [item for item in data if len(item[0]) <= query_max_size and len(item[1]) <= code_max_size]
         mrr = 0
-        hit = [0, 0, 0, 0, 0]
+        hit = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         for i in range(len(data)):
             items = []
             for j in range(len(data)):

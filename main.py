@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 def parse_args():
     parser = argparse.ArgumentParser("train and test code search model")
     parser.add_argument("-p", "--prepare", action="store_true", default=False, help="Prepare dataset first.")
-    parser.add_argument("--mode", choices=["train", "eval", "debug"], default="train",
+    parser.add_argument("--mode", choices=["train", "eval", "debug", "statistics"], default="train",
                         help="The mode to run. The `train` mode trains a model;"
                         "the `eval` mode evaluates the model.")
     parser.add_argument("-v", "--verbose", default=True, help="Print verbose info.")
@@ -43,7 +43,7 @@ def main():
     if option.prepare:
         logger.info("preparing dataset...")
         prepare(conf, conf['data']['train_code_path'], conf['data']['train_nl_path'], conf['data']['train_db_path'], train_mode=True)
-        prepare(conf, conf['data']['valid_code_path'], conf['data']['valid_nl_path'], conf['data']['valid_db_path'], train_mode=False, train_db_path=conf['data']['train_db_path'])
+        #prepare(conf, conf['data']['valid_code_path'], conf['data']['valid_nl_path'], conf['data']['valid_db_path'], train_mode=False, train_db_path=conf['data']['train_db_path'])
         prepare(conf, conf['data']['test_code_path'], conf['data']['test_nl_path'], conf['data']['test_db_path'], train_mode=False, train_db_path=conf['data']['train_db_path'])
     elif option.mode == 'train':
         logger.info("start training model...")
@@ -55,6 +55,39 @@ def main():
         searcher.load_model(int(num))
         print('load model successfully.')
         searcher.eval2()
+    elif option.mode == 'statistics':
+        s = input('Please input the relative data path (e.g. "domain/test"):')
+        paths = s.strip().split(';')
+        data = []
+        for x in paths:
+            base_path = os.path.join(conf['data']['wkdir'], './data/'+x)
+            data += Tokenizer().parse(base_path + '.nl', base_path + '.code')
+        data = [item for item in data if len(item[0]) and len(item[0])<=int(conf['data']['query_max_len']) and len(item[1])<=int(conf['data']['code_max_len'])]
+        print('|utterances| = ' + str(len(data)))
+        c = 0
+        for item in data:
+            c += len(item[0])
+        print('|natural language tokens| = ' + str(c))
+        c = 0
+        for item in data:
+            c += len(item[1])
+        print('|code tokens| = ' + str(c))
+        c = set()
+        for item in data:
+            for w in item[0]:
+                c.add(w)
+        print('|unique natural language tokens| = ' + str(len(c)))
+        for item in data:
+            for w in item[1]:
+                c.add(w)
+        print('|unique code tokens| = ' + str(len(c)))
+        nlMap = [0 for _ in range(int(conf['data']['query_max_len'])+1)]
+        codeMap = [0 for _ in range(int(int(conf['data']['code_max_len'])/10)+1)]
+        for item in data:
+            nlMap[len(item[0])] += 1
+            codeMap[int(len(item[1])/10)] += 1
+        print(nlMap)
+        print(codeMap)
     elif option.mode == 'debug':
         line = input('Please input two item ids, seperated by space: ')
         eles = line.strip().split()

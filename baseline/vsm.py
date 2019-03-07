@@ -18,7 +18,7 @@ def vsm(data):
     sim = similarities.SparseMatrixSimilarity(tfidf_model[corpus],
                                               num_features=len(dictionary.keys()))
     mrr = 0
-    hit = [0, 0, 0, 0, 0]
+    hit = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     for i in range(len(data)):
         query_id = i * 2
         query_tfidf = vectors[query_id]
@@ -38,6 +38,6 @@ def vsm(data):
 
 
 if __name__ == '__main__':
-    data = Tokenizer().parse('../data/domain/test.nl', '../data/domain/test.code')
-    data = [item for item in data if len(item[0]) <= 20 and len(item[1]) <= 400]
+    data = Tokenizer().parse('../data/hu18/test.nl', '../data/hu18/test.code')
+    data = [item for item in data if len(item[0]) <= 15 and len(item[1]) <= 400]
     vsm(data)

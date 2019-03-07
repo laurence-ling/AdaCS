@@ -9,7 +9,6 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from learning.model.rnn import RnnModel
-from learning.model.transformer import TransformerModel
 from preprocess.dataset import CodeSearchDataset
 from preprocess.lex.token import Tokenizer
 from preprocess.lex.word_sim import WordSim
@@ -64,8 +63,8 @@ class CodeSearcher:
             print('epoch', epoch, ': Loss =', epoch_loss / (train_size/batch_size))
             if epoch % save_round == 0:
                 self.save_model(epoch)
-            print('Validation...')
-            self.eval(valid_data)
+            # print('Validation...')
+            # self.eval(valid_data)
             print('Test...')
             self.eval(test_data)
 
@@ -102,7 +101,7 @@ class CodeSearcher:
                         break
             return ranks
 
-        top_k = 5
+        top_k = 10
         accs = [[] for _ in range(top_k)]
         mrrs = []
         for q_id, pos_matrix, pos_core_terms, pos_length, neg_matrix, neg_core_terms, neg_length, neg_ids in dataloader:

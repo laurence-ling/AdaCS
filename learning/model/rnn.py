@@ -32,7 +32,7 @@ class RnnModel(nn.Module):
         # print(x)
         index = length.view(-1, 1, 1)
         index = index.expand(x.shape[0], 1, x.shape[2]) - 1
-        x = torch.gather(x, 1, index).squeeze()
+        x = torch.gather(x, 1, index)
         x = x[idx_unsort]
         out = self.fc(x).squeeze(1)
         return out
@@ -41,7 +41,7 @@ class RnnModel(nn.Module):
         pos_score = self.forward(pos_matrix, pos_lengths, pos_core_terms)
         neg_score = self.forward(neg_matrix, neg_lengths, neg_core_terms)
         k = int(neg_score.shape[0]/pos_score.shape[0])
-        pos_score = pos_score.view(-1, 1).expand(pos_score.shape[0], k).contiguous().view(-1, 1).squeeze()
+        pos_score = pos_score.view(-1, 1).expand(-1, k).contiguous().view(-1, 1).squeeze()
         loss = (self.margin - pos_score + neg_score).clamp(min=1e-6).mean()
         return loss
 
