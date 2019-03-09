@@ -38,6 +38,6 @@ def vsm(data):
 
 
 if __name__ == '__main__':
-    data = Tokenizer().parse('../data/hu18/test.nl', '../data/hu18/test.code')
+    data = Tokenizer().parse('../data/domain/test.nl', '../data/domain/test.code')
     data = [item for item in data if len(item[0]) <= 15 and len(item[1]) <= 400]
     vsm(data)
