@@ -63,8 +63,8 @@ class CodeSearcher:
             print('epoch', epoch, ': Loss =', epoch_loss / (train_size/batch_size))
             if epoch % save_round == 0:
                 self.save_model(epoch)
-            # print('Validation...')
-            # self.eval(valid_data)
+            print('Validation...')
+            self.eval(valid_data)
             print('Test...')
             self.eval(test_data)
 
