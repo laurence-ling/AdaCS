@@ -1,5 +1,5 @@
 import functools
-import fastText
+import fasttext
 import re, os
 
 from gensim import corpora, models
@@ -45,14 +45,14 @@ class WordEmbeddings:
 
     def __init__(self, pretrain=True, update=True, fasttext_corpus_path=None):
         if pretrain:
-            self.model = fastText.load_model('resource/cc.en.300.bin')
+            self.model = fasttext.load_model('resource/cc.en.300.bin')
             return
         model_path = re.sub(r'\.txt$', '.model', fasttext_corpus_path)
         if update or not os.path.exists(model_path):
-            self.model = fastText.train_unsupervised(input=fasttext_corpus_path, model='skipgram')
+            self.model = fasttext.train_unsupervised(input=fasttext_corpus_path, model='skipgram')
             self.model.save_model(model_path)
         else:
-            self.model = fastText.load_model(model_path)
+            self.model = fasttext.load_model(model_path)
 
     @functools.lru_cache(maxsize=None, typed=False)
     def __getitem__(self, word):

@@ -5,5 +5,6 @@
 /preprocess/__pycache__/*
 /preprocess/lex/__pycache__/*
 /learning/__pycache__/*
+/learning/model/_pycache__/*
 nohup.out
 !.gitkeep
