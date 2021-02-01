@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from learning.model.rnn import RnnModel
 from preprocess.dataset import CodeSearchDataset
+from preprocess.dataset import MatchingMatrix
 from preprocess.lex.token import Tokenizer
 from preprocess.lex.word_sim import WordSim
 
@@ -18,7 +19,7 @@ class CodeSearcher:
     def __init__(self, conf):
         self.conf = conf
         self.wkdir = self.conf['data']['wkdir']
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
         train_data = CodeSearchDataset(os.path.join(conf['data']['wkdir'], conf['data']['train_db_path']))
         self.model = RnnModel(int(conf['data']['query_max_len']), train_data.core_term_size, int(conf['model']['core_term_embedding_size']), int(conf['model']['lstm_hidden_size']), int(conf['model']['lstm_layers']), float(self.conf['train']['margin'])).to(self.device)
         self.batch_size = int(self.conf['train']['batch_size'])
@@ -32,7 +33,7 @@ class CodeSearcher:
     def load_model(self, epoch):
         model_path = os.path.join(self.wkdir, 'models/epoch%d.h5' % epoch)
         assert os.path.exists(model_path), 'Weights not found.'
-        self.model.load_state_dict(torch.load(model_path))
+        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
 
     def train(self):
         train_data = CodeSearchDataset(os.path.join(self.wkdir, self.conf['data']['train_db_path']))
@@ -119,4 +120,47 @@ class CodeSearcher:
 
     def gVar(self, tensor):
         return tensor.to(self.device)
+
+    def predict(self, output_file):
+        tokenizer = Tokenizer()
+        # {str: list} ->  {label: tokens}
+        nl_dict = tokenizer.parse_nl(os.path.join(self.wkdir, self.conf['data']['test_nl_path']))
+        code_dict = tokenizer.parse_code(os.path.join(self.wkdir, self.conf['data']['test_code_path']))
+        fasttext_corpus_path = os.path.join(self.wkdir, re.sub(r'\.db$', '.txt', self.conf['data']['test_db_path']))
+        core_term_path = os.path.join(self.wkdir, 'conf/core_terms.txt')
+        word_sim = WordSim(core_term_path, pretrain=(self.conf['model']['pretrained_wordvec'] == str(True)), 
+                           update=False, fasttext_corpus_path=fasttext_corpus_path)
+
+        query_max_size = int(self.conf['data']['query_max_len'])
+        code_max_size = int(self.conf['data']['code_max_len'])
+        device = self.device
+        self.model.eval()
+        
+        nl_data = [(nid, tokens[: query_max_size]) for (nid, tokens) in nl_dict.items()]
+        code_data = [(cid, tokens[: code_max_size]) for (cid, tokens) in code_dict.items()]
+        print(f'nl size: {len(nl_data)}, code size: {len(code_data)}')
+
+        fout = open(output_file, 'w')
+        for nid, nl_token in nl_data:
+            items = []
+            for cid, code_token in code_data:
+                items.append(MatchingMatrix(nl_token, code_token, cid,
+                                            word_sim, query_max_size))
+            matrices = np.asarray([
+                            [CodeSearchDataset.pad_matrix(np.transpose(item.matrix),
+                                                          code_max_size,
+                                                          query_max_size)]
+                            for item in items])
+            lengths = [torch.LongTensor([len(item.core_terms)]).to(device) for item in items]
+            core_terms = np.asarray([
+                                [CodeSearchDataset.pad_terms(item.core_terms, code_max_size)]
+                            for item in items])
+            output = self.model(torch.from_numpy(matrices).to(device),
+                                lengths,
+                                torch.from_numpy(core_terms).to(device))
+            scores = output.cpu().detach().numpy().squeeze()
+            print(f'nl {nid} writing...')
+            for i, s in enumerate(scores):
+                fout.write(f'{nid} {i + 1} {s}\n')
+        fout.close()
 

@@ -10,7 +10,14 @@ class Tokenizer:
         self.p = PorterStemmer()
 
     def parse(self, nl_path, code_path):
-        return self.__combine(self.__parse_file(nl_path, True, True), self.__parse_file(code_path, False, True))
+        return self.__combine(self.__parse_file(nl_path, True, True), 
+                              self.__parse_file(code_path, False, True))
+
+    def parse_nl(self, nl_path):
+        return self.__parse_file(nl_path, True, True)
+
+    def parse_code(self, code_path):
+        return self.__parse_file(code_path, False, True)
 
     @staticmethod
     def __combine(nl_dict, code_dict):

@@ -22,9 +22,11 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 def parse_args():
     parser = argparse.ArgumentParser("train and test code search model")
     parser.add_argument("-p", "--prepare", action="store_true", default=False, help="Prepare dataset first.")
-    parser.add_argument("--mode", choices=["train", "eval", "debug", "statistics"], default="train",
-                        help="The mode to run. The `train` mode trains a model;"
-                        "the `eval` mode evaluates the model.")
+    parser.add_argument("--mode", choices=["train", "eval", "debug", "statistics","predict"],
+                        default="predict",
+                        help="The mode to run. Use `train` mode to train a model;"
+                        "Use `eval` mode to evaluate the model;"
+                        "Use `predict` mode to make predictions")
     parser.add_argument("-v", "--verbose", default=True, help="Print verbose info.")
     option = parser.parse_args()
     return option
@@ -55,6 +57,13 @@ def main():
         searcher.load_model(int(num))
         print('load model successfully.')
         searcher.eval2()
+    elif option.mode == 'predict':
+        num = input('Please input the epoch of the model to be loaded: ')
+        path = input('Please input the save path of model outputs: ')
+        searcher = CodeSearcher(conf)
+        searcher.load_model(int(num))
+        print('load model successfully.')
+        searcher.predict(path)
     elif option.mode == 'statistics':
         s = input('Please input the relative data path (e.g. "domain/test"):')
         paths = s.strip().split(';')
